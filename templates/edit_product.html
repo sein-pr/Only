@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Product - Shopy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-edit fa-2x me-3" style="color: #ea580c;"></i>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Edit Product</h4>
+                            <p class="text-muted mb-0">Update your product information</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-4">
+                            <!-- Product Name -->
+                            <div class="col-12">
+                                <label for="{{ form.name.id }}" class="form-label fw-medium">
+                                    {{ form.name.label.text }}
+                                </label>
+                                {{ form.name(class="form-control") }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="col-12">
+                                <label for="{{ form.description.id }}" class="form-label fw-medium">
+                                    {{ form.description.label.text }}
+                                </label>
+                                {{ form.description(class="form-control", rows="4") }}
+                            </div>
+                            
+                            <!-- Price and Stock -->
+                            <div class="col-md-6">
+                                <label for="{{ form.price.id }}" class="form-label fw-medium">
+                                    {{ form.price.label.text }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.price(class="form-control") }}
+                                </div>
+                                {% if form.price.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.price.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.stock_quantity.id }}" class="form-label fw-medium">
+                                    {{ form.stock_quantity.label.text }}
+                                </label>
+                                {{ form.stock_quantity(class="form-control") }}
+                                {% if form.stock_quantity.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.stock_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Category -->
+                            <div class="col-md-6">
+                                <label for="{{ form.category_id.id }}" class="form-label fw-medium">
+                                    {{ form.category_id.label.text }}
+                                </label>
+                                {{ form.category_id(class="form-select") }}
+                                {% if form.category_id.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.category_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Current Image -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Current Image</label>
+                                <div class="border rounded p-3 text-center">
+                                    {% if product.image_url %}
+                                        <img src="{{ product.image_url }}" alt="{{ product.name }}" 
+                                             class="img-fluid rounded" style="max-height: 100px;">
+                                    {% else %}
+                                        <i class="fas fa-image fa-3x text-muted"></i>
+                                        <p class="text-muted mb-0 mt-2">No image uploaded</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- New Image Upload -->
+                            <div class="col-12">
+                                <label for="{{ form.image.id }}" class="form-label fw-medium">
+                                    Update Product Image
+                                </label>
+                                {{ form.image(class="form-control") }}
+                                <div class="form-text">Leave empty to keep current image</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Product
+                            </button>
+                            <a href="{{ url_for('seller_products') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

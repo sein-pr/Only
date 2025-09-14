@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation - Shopy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Success Message -->
+            <div class="text-center mb-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                </div>
+                <h1 class="fw-bold mb-3">Order Confirmed!</h1>
+                <p class="lead text-muted">Thank you for your purchase. Your order has been successfully placed.</p>
+            </div>
+            
+            <!-- Order Details Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light border-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0 fw-bold">Order Details</h5>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-success fs-6">{{ order.status.title() }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Order Information</h6>
+                            <p class="mb-1"><strong>Order Number:</strong> {{ order.order_number }}</p>
+                            <p class="mb-1"><strong>Order Date:</strong> {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            <p class="mb-0"><strong>Total Amount:</strong> 
+                                <span class="fw-bold" style="color: #ea580c;">${{ "%.2f"|format(order.total_amount) }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Delivery Information</h6>
+                            <p class="mb-1"><strong>Estimated Delivery:</strong> 3-5 business days</p>
+                            <p class="mb-1"><strong>Shipping Method:</strong> Standard Shipping</p>
+                            <p class="mb-0"><strong>Tracking:</strong> Will be provided via email</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">Order Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3">Product</th>
+                                    <th class="py-3">Price</th>
+                                    <th class="py-3">Quantity</th>
+                                    <th class="py-3">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.order_items %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ item.product.image_url or '/placeholder.svg?height=60&width=60' }}" 
+                                                 alt="{{ item.product.name }}" class="me-3 rounded"
+                                                 style="width: 60px; height: 60px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">{{ item.product.name }}</h6>
+                                                <small class="text-muted">{{ item.product.category.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-medium">${{ "%.2f"|format(item.price) }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-medium">{{ item.quantity }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-bold" style="color: #ea580c;">
+                                            ${{ "%.2f"|format(item.price * item.quantity) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">What's Next?</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-envelope fa-3x mb-3" style="color: #ea580c;"></i>
+                            <h6 class="fw-bold">Email Confirmation</h6>
+                            <p class="text-muted small">You'll receive an email confirmation shortly with your order details.</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-box fa-3x mb-3" style="color: #ea580c;"></i>
+                            <h6 class="fw-bold">Order Processing</h6>
+                            <p class="text-muted small">Your order is being prepared and will be shipped within 1-2 business days.</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-truck fa-3x mb-3" style="color: #ea580c;"></i>
+                            <h6 class="fw-bold">Tracking Information</h6>
+                            <p class="text-muted small">Once shipped, you'll receive tracking information to monitor your delivery.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('order_history') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-history me-2"></i>View Order History
+                    </a>
+                    <a href="{{ url_for('shop') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add some celebration animation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate the success icon
+        const successIcon = document.querySelector('.fa-check-circle');
+        successIcon.style.opacity = '0';
+        successIcon.style.transform = 'scale(0.5)';
+        successIcon.style.transition = 'all 0.6s ease';
+        
+        setTimeout(() => {
+            successIcon.style.opacity = '1';
+            successIcon.style.transform = 'scale(1)';
+        }, 300);
+        
+        // Add confetti effect (simple version)
+        createConfetti();
+    });
+    
+    function createConfetti() {
+        const colors = ['#ea580c', '#f97316', '#fb923c', '#fed7aa'];
+        const confettiCount = 50;
+        
+        for (let i = 0; i < confettiCount; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                confetti.style.zIndex = '9999';
+                confetti.style.pointerEvents = 'none';
+                confetti.style.borderRadius = '50%';
+                
+                document.body.appendChild(confetti);
+                
+                // Animate falling
+                confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: 'translateY(100vh) rotate(360deg)', opacity: 0 }
+                ], {
+                    duration: 3000 + Math.random() * 2000,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                }).onfinish = () => confetti.remove();
+            }, i * 100);
+        }
+    }
+</script>
+{% endblock %}

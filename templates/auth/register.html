@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Shopy{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0" style="height: calc(100vh - 80px);">
+    <div class="row g-0 h-100">
+        <!-- Left Side - Promotional Content -->
+        <div class="col-lg-6 login-promo d-flex align-items-center justify-content-center text-white position-relative">
+            <div class="sliding-bg position-absolute w-100 h-100"></div>
+            <div class="text-center z-index-2 position-relative p-5">
+                <div class="promo-slide">
+                    <i class="fas fa-store fa-4x mb-4"></i>
+                    <h1 class="display-4 fw-bold mb-4">Join Only Today</h1>
+                    <p class="lead mb-4">Start your journey as a buyer or seller in our thriving marketplace community.</p>
+                    
+                    <div class="row text-center mt-5">
+                        <div class="col-6">
+                            <div class="feature-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h6>Join Community</h6>
+                            <small>Thousands of happy customers</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h6>Grow Business</h6>
+                            <small>Expand your reach</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Registration Form -->
+        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-light">
+            <div class="w-100 px-5" style="max-width: 400px;">
+                <div class="slide-in">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold mb-2" style="color: #ea580c;">Create Account</h2>
+                        <p class="text-muted">Join our community and start shopping or selling today!</p>
+                    </div>
+                    
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3 form-floating">
+                            {{ form.username(class="form-control form-control-lg", placeholder="Choose a username", id="floatingUsername") }}
+                            <label for="floatingUsername" class="fw-medium">Username</label>
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3 form-floating">
+                            {{ form.email(class="form-control form-control-lg", placeholder="Enter your email", id="floatingEmail") }}
+                            <label for="floatingEmail" class="fw-medium">Email Address</label>
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3 form-floating">
+                            {{ form.password(class="form-control form-control-lg", placeholder="Create a strong password", id="floatingPassword") }}
+                            <label for="floatingPassword" class="fw-medium">Password</label>
+                            <div class="position-absolute end-0 top-50 translate-middle-y me-3">
+                                <i class="fas fa-eye" id="togglePassword" style="cursor: pointer; color: #6c757d;"></i>
+                            </div>
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="role" class="form-label fw-medium">Account Type</label>
+                            {{ form.role(class="form-select form-select-lg") }}
+                            <div class="form-text">Choose 'Buyer' to shop or 'Seller' to sell products</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="registerBtn">
+                            <span class="btn-text">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </span>
+                            <span class="btn-loading d-none">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Creating Account...
+                            </span>
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Already have an account? 
+                                <a href="{{ url_for('login') }}" class="text-decoration-none fw-medium" style="color: #ea580c;">
+                                    Sign in here
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Animate form elements on focus
+        const inputs = document.querySelectorAll('.form-control, .form-select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+                this.parentElement.style.transition = 'all 0.3s ease';
+                this.style.borderColor = '#ea580c';
+                this.style.boxShadow = '0 0 0 0.2rem rgba(234, 88, 12, 0.25)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            });
+        });
+        
+        // Password toggle functionality
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordField = document.getElementById('floatingPassword');
+        
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+        
+        // Form submission animation
+        const registerForm = document.querySelector('form');
+        const registerBtn = document.getElementById('registerBtn');
+        
+        registerForm.addEventListener('submit', function() {
+            const btnText = registerBtn.querySelector('.btn-text');
+            const btnLoading = registerBtn.querySelector('.btn-loading');
+            
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            registerBtn.disabled = true;
+        });
+        
+        // Password strength indicator
+        const passwordInput = document.getElementById('floatingPassword');
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strength = calculatePasswordStrength(password);
+            
+            // Remove existing strength indicator
+            const existingIndicator = this.parentElement.querySelector('.password-strength');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+            
+            if (password.length > 0) {
+                const indicator = document.createElement('div');
+                indicator.className = 'password-strength mt-1';
+                indicator.innerHTML = `
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-${strength.color}" 
+                             style="width: ${strength.percentage}%"></div>
+                    </div>
+                    <small class="text-${strength.color}">${strength.text}</small>
+                `;
+                this.parentElement.appendChild(indicator);
+            }
+        });
+        
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            
+            if (password.length >= 6) score += 1;
+            if (password.length >= 10) score += 1;
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            if (/[^A-Za-z0-9]/.test(password)) score += 1;
+            
+            if (score < 3) {
+                return { percentage: 33, color: 'danger', text: 'Weak password' };
+            } else if (score < 5) {
+                return { percentage: 66, color: 'warning', text: 'Medium password' };
+            } else {
+                return { percentage: 100, color: 'success', text: 'Strong password' };
+            }
+        }
+    });
+</script>
+{% endblock %}

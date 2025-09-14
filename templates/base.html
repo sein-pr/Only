@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Only - Your Premium Shopping Destination{% endblock %}</title>
+
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- <link rel="icon" href="{{ url_for('static', filename='images\logo-color.png') }}" type="image/x-icon"> -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/logo-color.png') }}" type="image/png">
+    
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #ffffff;
+            color: #4b5563;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .navbar-brand {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 1.8rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">
+                <img src="{{ url_for('static', filename='images/logo-color.png') }}" 
+                     alt="logo" class="img-fluid" style="height: 1.9rem; width: auto;">
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('shop') }}">Shop</a>
+                    </li>
+                    {% if session.user_id and session.user_role == 'seller' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('seller_dashboard') }}">Dashboard</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if session.user_id %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ session.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if session.user_role == 'buyer' %}
+                                <li><a class="dropdown-item" href="{{ url_for('order_history') }}">Order History</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="padding-top: 80px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating Cart -->
+    {% if not request.endpoint in ['login', 'register'] %}
+    <div class="floating-cart">
+        <button class="btn btn-primary rounded-circle p-3" onclick="toggleMiniCart()" style="width: 60px; height: 60px;" id="floatingCartBtn">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-badge" id="cartBadge">0</span>
+        </button>
+    </div>
+
+    <!-- Enhanced Mini Cart -->
+    <div class="mini-cart" id="miniCart">
+        <div class="mini-cart-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Shopping Cart</h6>
+                <button class="btn btn-sm text-white" onclick="toggleMiniCart()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mini-cart-items" id="cartItems">
+            <!-- Cart items will be loaded here -->
+        </div>
+        <div class="mini-cart-footer">
+            <div class="d-flex justify-content-between mb-2">
+                <small class="text-muted">Subtotal:</small>
+                <small class="fw-bold" id="cartSubtotal">$0.00</small>
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="toggleMiniCart()">Continue Shopping</button>
+                <a href="{{ url_for('cart') }}" class="btn btn-primary btn-sm">View Cart</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let miniCartVisible = false;
+        
+        function toggleMiniCart() {
+            const miniCart = document.getElementById('miniCart');
+            const floatingBtn = document.getElementById('floatingCartBtn');
+            
+            miniCartVisible = !miniCartVisible;
+            
+            if (miniCartVisible) {
+                loadCartItems();
+                miniCart.classList.add('show');
+                floatingBtn.classList.add('cart-bounce');
+                setTimeout(() => floatingBtn.classList.remove('cart-bounce'), 600);
+            } else {
+                miniCart.classList.remove('show');
+            }
+        }
+        
+        function loadCartItems() {
+            fetch('/api/cart-items')
+                .then(response => response.json())
+                .then(data => {
+                    const cartItems = document.getElementById('cartItems');
+                    const cartSubtotal = document.getElementById('cartSubtotal');
+                    
+                    if (data.items.length === 0) {
+                        cartItems.innerHTML = `
+                            <div class="text-center p-4">
+                                <i class="fas fa-shopping-cart fa-2x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">Your cart is empty</p>
+                            </div>
+                        `;
+                        cartSubtotal.textContent = '$0.00';
+                    } else {
+                        cartItems.innerHTML = data.items.map(item => `
+                            <div class="mini-cart-item">
+                                <div class="d-flex align-items-center">
+                                    <img src="${item.image_url || '/placeholder.svg?height=50&width=50'}" 
+                                         alt="${item.name}" class="me-2 rounded" 
+                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-medium small">${item.name}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            ${item.quantity}x $${item.price.toFixed(2)}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold small">$${item.total.toFixed(2)}</div>
+                                        <button class="btn btn-sm text-danger" onclick="removeCartItem(${item.id})">
+                                            <i class="fas fa-trash" style="font-size: 0.7rem;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                        cartSubtotal.textContent = `$${data.total.toFixed(2)}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading cart items:', error);
+                    showToast('Error loading cart items', 'error');
+                });
+        }
+        
+        function updateCartBadge() {
+            fetch('/api/cart-count')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('cartBadge');
+                    badge.textContent = data.count;
+                    badge.style.display = data.count > 0 ? 'flex' : 'none';
+                })
+                .catch(error => {
+                    console.error('Error updating cart badge:', error);
+                });
+        }
+        
+        function addToCartAPI(productId, quantity = 1) {
+            return fetch(`/api/add-to-cart/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ quantity: quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateCartBadge();
+                    showToast(data.message, 'success');
+                    
+                    // Add visual feedback
+                    const floatingBtn = document.getElementById('floatingCartBtn');
+                    floatingBtn.classList.add('cart-bounce');
+                    setTimeout(() => floatingBtn.classList.remove('cart-bounce'), 600);
+                } else {
+                    showToast(data.message, 'error');
+                }
+                return data;
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                showToast('Error adding item to cart', 'error');
+            });
+        }
+        
+        function removeCartItem(itemId) {
+            fetch(`/api/remove-cart-item/${itemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateCartBadge();
+                    loadCartItems();
+                    showToast(data.message, 'info');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error removing cart item:', error);
+                showToast('Error removing item', 'error');
+            });
+        }
+        
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            
+            const icon = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            }[type] || 'fas fa-info-circle';
+            
+            toast.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="${icon} me-2"></i>
+                    <span>${message}</span>
+                    <button class="btn btn-sm ms-auto" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Close mini cart when clicking outside
+        document.addEventListener('click', function(event) {
+            const miniCart = document.getElementById('miniCart');
+            const floatingCart = document.querySelector('.floating-cart');
+            
+            if (miniCartVisible && !miniCart.contains(event.target) && !floatingCart.contains(event.target)) {
+                toggleMiniCart();
+            }
+        });
+        
+        // Initialize cart badge on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartBadge();
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

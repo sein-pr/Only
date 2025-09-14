@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Add Product - Shopy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="fw-bold mb-2">Add New Product</h1>
+                <p class="text-muted">Fill in the details below to add a new product to your store</p>
+            </div>
+            
+            <!-- Product Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">Product Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Product Image -->
+                        <div class="mb-4">
+                            <label class="form-label fw-medium">Product Image</label>
+                            <div class="border-2 border-dashed rounded p-4 text-center" style="border-color: #e5e7eb;" id="imageUploadArea">
+                                <div id="imagePreview" class="d-none">
+                                    <img id="previewImg" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    <div>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeImage()">
+                                            <i class="fas fa-trash me-1"></i>Remove Image
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="uploadPrompt">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <h6 class="text-muted mb-2">Upload Product Image</h6>
+                                    <p class="text-muted small mb-3">Drag and drop an image here, or click to select</p>
+                                    {{ form.image(class="form-control", style="display: none;", onchange="previewImage(this)") }}
+                                    <button type="button" class="btn btn-outline-primary" onclick="document.querySelector('input[type=file]').click()">
+                                        Choose Image
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-medium">Product Name</label>
+                            {{ form.name(class="form-control form-control-lg", placeholder="Enter product name") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label fw-medium">Category</label>
+                            {{ form.category_id(class="form-select form-select-lg") }}
+                            {% if form.category_id.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.category_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Price and Stock -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="price" class="form-label fw-medium">Price ($)</label>
+                                {{ form.price(class="form-control form-control-lg", placeholder="0.00", step="0.01") }}
+                                {% if form.price.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.price.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="stock_quantity" class="form-label fw-medium">Stock Quantity</label>
+                                {{ form.stock_quantity(class="form-control form-control-lg", placeholder="0") }}
+                                {% if form.stock_quantity.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.stock_quantity.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-medium">Description</label>
+                            {{ form.description(class="form-control", rows="5", placeholder="Describe your product in detail...") }}
+                            <div class="form-text">Provide a detailed description to help customers understand your product better.</div>
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary btn-lg flex-fill">
+                                <i class="fas fa-plus me-2"></i>Add Product
+                            </button>
+                            <a href="{{ url_for('seller_products') }}" class="btn btn-outline-secondary btn-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-lightbulb me-2" style="color: #ea580c;"></i>
+                        Tips for Better Sales
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use high-quality images that show your product clearly
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Write detailed descriptions with key features and benefits
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Set competitive prices by researching similar products
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Keep your inventory updated to avoid overselling
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').classList.remove('d-none');
+                document.getElementById('uploadPrompt').classList.add('d-none');
+            };
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function removeImage() {
+        document.querySelector('input[type=file]').value = '';
+        document.getElementById('imagePreview').classList.add('d-none');
+        document.getElementById('uploadPrompt').classList.remove('d-none');
+    }
+    
+    // Drag and drop functionality
+    const uploadArea = document.getElementById('imageUploadArea');
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#ea580c';
+        this.style.backgroundColor = '#fef3c7';
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#e5e7eb';
+        this.style.backgroundColor = '';
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#e5e7eb';
+        this.style.backgroundColor = '';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            document.querySelector('input[type=file]').files = files;
+            previewImage(document.querySelector('input[type=file]'));
+        }
+    });
+    
+    // Form validation feedback
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type=submit]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding Product...';
+        submitBtn.disabled = true;
+    });
+</script>
+{% endblock %}

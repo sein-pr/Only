@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Dashboard - Shopy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Dashboard Header -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-8">
+            <h1 class="fw-bold mb-2">Welcome back, {{ session.username }}!</h1>
+            <p class="text-muted mb-0">Manage your store and track your sales performance</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>Add New Product
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">{{ total_products }}</h3>
+                    <p class="text-muted mb-0">Total Products</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">{{ total_orders }}</h3>
+                    <p class="text-muted mb-0">Total Orders</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">$2,450</h3>
+                    <p class="text-muted mb-0">Total Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">4.8</h3>
+                    <p class="text-muted mb-0">Average Rating</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('add_product') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>Add New Product
+                        </a>
+                        <a href="{{ url_for('seller_products') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Manage Products
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="showOrdersModal()">
+                            <i class="fas fa-truck me-2"></i>View Orders
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="showAnalyticsModal()">
+                            <i class="fas fa-chart-bar me-2"></i>View Analytics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 fw-bold">Store Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="seller-stats p-3 rounded mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="fw-bold mb-1">This Month</h6>
+                                <small class="text-muted">Sales Performance</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="h5 mb-0 fw-bold" style="color: #ea580c;">+15%</div>
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>vs last month
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 text-center">
+                        <div class="col-4">
+                            <div class="fw-bold">24</div>
+                            <small class="text-muted">Products Sold</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold">18</div>
+                            <small class="text-muted">New Customers</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold">4.8</div>
+                            <small class="text-muted">Avg Rating</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Products -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Recent Products</h5>
+                <a href="{{ url_for('seller_products') }}" class="btn btn-outline-primary btn-sm">
+                    View All Products
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if recent_products %}
+                <div class="row g-4">
+                    {% for product in recent_products %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm product-card">
+                            <img src="{{ product.image_url or '/placeholder.svg?height=200&width=300' }}" 
+                                 class="card-img-top" alt="{{ product.name }}" 
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title fw-bold">{{ product.name }}</h6>
+                                <p class="card-text text-muted small flex-grow-1">
+                                    {{ product.description[:80] }}{% if product.description|length > 80 %}...{% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h6 mb-0 fw-bold" style="color: #ea580c;">
+                                        ${{ "%.2f"|format(product.price) }}
+                                    </span>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('product_detail', product_id=product.id) }}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-secondary" onclick="editProduct('{{ product.id }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Stock: {{ product.stock_quantity }} | 
+                                        Category: {{ product.category.name }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">No products yet</h5>
+                    <p class="text-muted mb-4">Start by adding your first product to your store</p>
+                    <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Your First Product
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Orders Modal -->
+<div class="modal fade" id="ordersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Recent Orders</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">No recent orders</h6>
+                    <p class="text-muted small">Orders will appear here when customers purchase your products</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Modal -->
+<div class="modal fade" id="analyticsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Store Analytics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="fw-bold" style="color: #ea580c;">$2,450</h4>
+                                <p class="text-muted mb-0">Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="fw-bold" style="color: #ea580c;">156</h4>
+                                <p class="text-muted mb-0">Total Views</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">Sales Trend</h6>
+                    <div class="bg-light p-4 rounded text-center">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Analytics dashboard coming soon!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showOrdersModal() {
+        new bootstrap.Modal(document.getElementById('ordersModal')).show();
+    }
+    
+    function showAnalyticsModal() {
+        new bootstrap.Modal(document.getElementById('analyticsModal')).show();
+    }
+    
+    function editProduct(productId) {
+        // Redirect to edit product page (to be implemented)
+        window.location.href = `/seller/edit-product/${productId}`;
+    }
+    
+    // Add some interactive animations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate stats cards on load
+        const cards = document.querySelectorAll('.dashboard-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.6s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

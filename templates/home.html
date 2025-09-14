@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Shopy - Your Premium Shopping Destination{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white">
+    <div class="container">
+        <div class="row align-items-center min-vh-50">
+            <div class="col-lg-6">
+                <h1 class="display-3 fw-bold mb-4">Discover Amazing Products</h1>
+                <p class="lead mb-4">Shop from thousands of trusted sellers worldwide. Find everything you need in one place with fast shipping and secure payments.</p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('shop') }}" class="btn btn-light btn-lg px-4">
+                        <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+                    </a>
+                    {% if not session.user_id %}
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-user-plus me-2"></i>Join Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{{ url_for('static', filename='images/logo-white.png') }}" 
+                     alt="logo" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">Shop by Category</h2>
+            <p class="text-muted">Explore our wide range of product categories</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for category in categories %}
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('shop', category=category.id) }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm product-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i class="fas fa-{% if category.name == 'Electronics' %}laptop{% elif category.name == 'Clothing' %}tshirt{% elif category.name == 'Home & Garden' %}home{% elif category.name == 'Books' %}book{% else %}dumbbell{% endif %}"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">{{ category.name }}</h5>
+                            <p class="card-text text-muted">{{ category.description }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold mb-3">Featured Products</h2>
+            <p class="text-muted">Check out our latest and most popular items</p>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm product-card">
+                    <img src="{{ product.image_url or '/placeholder.svg?height=200&width=300' }}" 
+                         class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title fw-bold">{{ product.name }}</h6>
+                        <p class="card-text text-muted small flex-grow-1">{{ product.description[:100] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 mb-0 fw-bold" style="color: #ea580c;">${{ "%.2f"|format(product.price) }}</span>
+                            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-primary btn-sm">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{{ url_for('shop') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-arrow-right me-2"></i>View All Products
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-3 text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <h6 class="fw-bold">Fast Shipping</h6>
+                <p class="text-muted small">Free shipping on orders over $50</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h6 class="fw-bold">Secure Payment</h6>
+                <p class="text-muted small">Your payment information is safe</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-undo"></i>
+                </div>
+                <h6 class="fw-bold">Easy Returns</h6>
+                <p class="text-muted small">30-day return policy</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h6 class="fw-bold">24/7 Support</h6>
+                <p class="text-muted small">Always here to help you</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
