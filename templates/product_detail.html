@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ product.name }} - Shopy{% endblock %}
+{% block title %}{{ product.name }} - Only{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -224,7 +224,7 @@
         if (navigator.share) {
             navigator.share({
                 title: '{{ product.name }}',
-                text: 'Check out this amazing product on Shopy!',
+                text: 'Check out this amazing product on Only!',
                 url: window.location.href
             });
         } else {

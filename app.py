@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect  # Added CSRF protection import
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange
+from models.models import db, User, Category, Product, Order, OrderItem, CartItem
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -10,98 +12,27 @@ import os
 import uuid
 from flask_mail import Mail, Message
 import stripe
+from decimal import Decimal
+import logging
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopy.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///only.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'fromisgood@gmail.com'
-app.config['MAIL_PASSWORD'] = 'SeasonOneWasGood.'
-app.config['MAIL_DEFAULT_SENDER'] = 'Shopy <noreply@shopy.com>'
+csrf = CSRFProtect(app)
 
 stripe.api_key = 'sk_test_51S6EpwFqTd4ZYPM4scrrMYa7tcqKq09tcoEb16OCxwcHTroxGJ3cQyesZZcIZVntKCP3w9Mi3Mj3UUBUzqXa4nXx00PoMSg0Fm'
 app.config['STRIPE_PUBLISHABLE_KEY'] = 'pk_test_51S6EpwFqTd4ZYPM4gyqefCN2WoHmmqM7SeQqjR1Tf0r7e0Tco9VAjRsD4lhLq1eiZCLKIE7WY8M37MUdCzTcTpO000KNlevrJH'
 
 mail = Mail(app)
 
-db = SQLAlchemy(app)
+db.init_app(app)
+tax_rate = Decimal("0.08")
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Database Models
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(20), default='buyer')  # 'buyer' or 'seller'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    orders = db.relationship('Order', backref='user', lazy=True)
-    products = db.relationship('Product', backref='seller', lazy=True)
-
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    
-    # Relationships
-    products = db.relationship('Product', backref='category', lazy=True)
-
-class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    price = db.Column(db.Numeric(10, 2), nullable=False)
-    stock_quantity = db.Column(db.Integer, default=0)
-    image_url = db.Column(db.String(200))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Foreign Keys
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
-    seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    # Relationships
-    order_items = db.relationship('OrderItem', backref='product', lazy=True)
-
-class Order(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(50), unique=True, nullable=False)
-    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, confirmed, shipped, delivered
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Foreign Keys
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    # Relationships
-    order_items = db.relationship('OrderItem', backref='order', lazy=True)
-
-class OrderItem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Numeric(10, 2), nullable=False)
-    
-    # Foreign Keys
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-
-class CartItem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(100), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    product = db.relationship('Product', backref='cart_items')
 
 # Forms
 class LoginForm(FlaskForm):
@@ -245,7 +176,7 @@ def register():
             else:
                 session['session_id'] = f"user_{user.id}"
             
-            flash(f'Welcome to Shopy, {user.username}!', 'success')
+            flash(f'Welcome to Only, {user.username}!', 'success')
             
             # Redirect based on user role
             if user.role == 'seller':
@@ -302,14 +233,33 @@ def product_detail(product_id):
     return render_template('product_detail.html', product=product, related_products=related_products)
 
 # Cart Routes
-@app.route('/cart')
+
+@app.route("/cart")
 def cart():
     session_id = get_session_id()
     cart_items = CartItem.query.filter_by(session_id=session_id).all()
     
     total = sum(item.product.price * item.quantity for item in cart_items)
+    tax_rate = Decimal("0.08")
+    shipping_threshold = Decimal("50.00")
+    shipping_cost = Decimal("5.99")
     
-    return render_template('cart.html', cart_items=cart_items, total=total)
+    tax = total * tax_rate
+    shipping = Decimal("0.00") if total >= shipping_threshold else shipping_cost
+    grand_total = total + tax + shipping
+    remaining_for_free_shipping = (
+        shipping_threshold - total if total < shipping_threshold else Decimal("0.00")
+    )
+
+    return render_template(
+        "cart.html",
+        cart_items=cart_items,  # Pass the original cart items, not processed data
+        total=total,
+        tax=tax,
+        shipping=shipping,
+        grand_total=grand_total,
+        remaining_for_free_shipping=remaining_for_free_shipping
+    )
 
 @app.route('/add-to-cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
@@ -590,12 +540,27 @@ def checkout():
         return redirect(url_for('shop'))
     
     subtotal = sum(item.product.price * item.quantity for item in cart_items)
-    shipping = 0 if subtotal >= 50 else 5.99
-    tax = subtotal * 0.08
+    shipping_threshold = Decimal("50.00")
+    shipping_cost = Decimal("5.99")
+    tax_rate = Decimal("0.08")
+    
+    shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
+    tax = subtotal * tax_rate
     total = subtotal + shipping + tax
+    
+    # Format cart data for PayPal integration
+    cart_data_json = []
+    for item in cart_items:
+        cart_data_json.append({
+            'id': item.product_id,
+            'name': item.product.name,
+            'price': float(item.product.price),
+            'quantity': item.quantity
+        })
     
     return render_template('checkout.html', 
                          cart_items=cart_items,
+                         cart_data_json=cart_data_json,
                          subtotal=subtotal,
                          shipping=shipping,
                          tax=tax,
@@ -621,10 +586,14 @@ def process_order():
         'zip_code': request.form.get('zip_code')
     }
     
-    # Calculate totals
+    # Calculate totals using Decimal for consistency
     subtotal = sum(item.product.price * item.quantity for item in cart_items)
-    shipping = 0 if subtotal >= 50 else 5.99
-    tax = subtotal * 0.08
+    shipping_threshold = Decimal("50.00")
+    shipping_cost = Decimal("5.99")
+    tax_rate = Decimal("0.08")
+    
+    shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
+    tax = subtotal * tax_rate
     total = subtotal + shipping + tax
     
     payment_successful = False
@@ -644,9 +613,20 @@ def process_order():
                 return redirect(url_for('checkout'))
                 
         elif payment_method == 'paypal':
-            # Simulate PayPal processing
-            payment_successful = True
-            payment_id = f"pp_{str(uuid.uuid4())[:24]}"
+            # Handle PayPal payment - check for PayPal transaction data
+            paypal_order_id = request.form.get('paypal_order_id')
+            paypal_payment_id = request.form.get('paypal_payment_id')
+            paypal_payer_id = request.form.get('paypal_payer_id')
+            
+            if paypal_order_id and paypal_payment_id:
+                # In a real app, you would verify the PayPal payment here
+                # using PayPal's API to ensure the payment is legitimate
+                payment_successful = True
+                payment_id = paypal_payment_id
+                print(f"PayPal payment processed: Order ID {paypal_order_id}, Payment ID {paypal_payment_id}")
+            else:
+                flash('PayPal payment verification failed. Please try again.', 'error')
+                return redirect(url_for('checkout'))
             
         elif payment_method == 'apple_pay':
             # Simulate Apple Pay processing
@@ -811,6 +791,63 @@ def reorder(order_id):
             'message': 'Failed to reorder items'
         }), 500
 
+# PayPal API Routes
+@app.route('/api/paypal/create-order', methods=['POST'])
+@login_required
+@csrf.exempt  # Exempt PayPal API routes from CSRF protection
+def create_paypal_order():
+    """Create PayPal order for checkout - simplified version"""
+    try:
+        session_id = get_session_id()
+        cart_items = CartItem.query.filter_by(session_id=session_id).all()
+        
+        if not cart_items:
+            return jsonify({'error': 'Cart is empty'}), 400
+        
+        # Calculate total amount
+        subtotal = sum(item.product.price * item.quantity for item in cart_items)
+        shipping_threshold = Decimal("50.00")
+        shipping_cost = Decimal("5.99")
+        tax_rate = Decimal("0.08")
+        
+        shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
+        tax = subtotal * tax_rate
+        total_amount = subtotal + shipping + tax
+        
+        # For demo purposes, return a mock PayPal order ID
+        # In production, you would use the actual PayPal SDK here
+        mock_order_id = f"PAYPAL_{str(uuid.uuid4())[:8].upper()}"
+        
+        return jsonify({
+            'id': mock_order_id,
+            'status': 'CREATED'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"PayPal order creation failed: {str(e)}")
+        return jsonify({'error': 'Failed to create PayPal order'}), 500
+
+@app.route('/api/paypal/capture-order/<order_id>', methods=['POST'])
+@login_required
+@csrf.exempt  # Exempt PayPal API routes from CSRF protection
+def capture_paypal_order(order_id):
+    """Capture PayPal order after approval - simplified version"""
+    try:
+        # For demo purposes, simulate successful capture
+        # In production, you would use the actual PayPal SDK here
+        return jsonify({
+            'id': order_id,
+            'status': 'COMPLETED',
+            'payer': {
+                'email_address': 'customer@example.com',
+                'payer_id': f"PAYER_{str(uuid.uuid4())[:8]}"
+            }
+        })
+        
+    except Exception as e:
+        app.logger.error(f"PayPal order capture failed: {str(e)}")
+        return jsonify({'error': 'Failed to capture PayPal order'}), 500
+
 # Email Notification Function
 def send_order_confirmation_email(order):
     """Send order confirmation email to customer"""
@@ -823,7 +860,7 @@ def send_order_confirmation_email(order):
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #ea580c; margin-bottom: 10px;">Shopy</h1>
+                    <h1 style="color: #ea580c; margin-bottom: 10px;">Only</h1>
                     <h2 style="color: #333;">Order Confirmation</h2>
                 </div>
                 
@@ -875,9 +912,9 @@ def send_order_confirmation_email(order):
                 </div>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                    <p>Thank you for shopping with Shopy!</p>
+                    <p>Thank you for shopping with Only!</p>
                     <p style="color: #666; font-size: 14px;">
-                        If you have any questions, please contact us at support@shopy.com
+                        If you have any questions, please contact us at support@only.com
                     </p>
                 </div>
             </div>
