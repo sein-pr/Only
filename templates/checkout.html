@@ -12,13 +12,7 @@
                     <h4 class="mb-0 fw-bold">Checkout</h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ url_for('process_order') }}" id="checkoutForm">
-                        <!-- Added CSRF token for form protection -->
-                        {{ csrf_token() }}
-                        <!-- Hidden fields for PayPal -->
-                        <input type="hidden" name="paypal_order_id" id="paypal_order_id">
-                        <input type="hidden" name="paypal_payment_id" id="paypal_payment_id">
-                        <input type="hidden" name="paypal_payer_id" id="paypal_payer_id">
+                    <form id="checkoutForm">
                         
                         <!-- Shipping Information -->
                         <div class="mb-4">
@@ -29,23 +23,23 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-medium">First Name</label>
-                                    <input type="text" class="form-control" name="first_name" required>
+                                    <input type="text" class="form-control" id="firstName" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-medium">Last Name</label>
-                                    <input type="text" class="form-control" name="last_name" required>
+                                    <input type="text" class="form-control" id="lastName" required>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-medium">Address</label>
-                                    <input type="text" class="form-control" name="address" placeholder="Street address" required>
+                                    <input type="text" class="form-control" id="address" placeholder="Street address" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-medium">City</label>
-                                    <input type="text" class="form-control" name="city" required>
+                                    <input type="text" class="form-control" id="city" required>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-medium">State</label>
-                                    <select class="form-select" name="state" required>
+                                    <select class="form-select" id="state" required>
                                         <option value="">Select State</option>
                                         <option value="OK">Okahnadja</option>
                                         <option value="RU">Rundu</option>
@@ -55,7 +49,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-medium">ZIP Code</label>
-                                    <input type="text" class="form-control" name="zip_code" required>
+                                    <input type="text" class="form-control" id="zipCode" required>
                                 </div>
                             </div>
                         </div>
@@ -67,76 +61,13 @@
                                 Payment Information
                             </h5>
                             
-                            <!-- Payment Method Selection -->
-                            <div class="mb-3">
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="credit_card" checked>
-                                            <label class="form-check-label" for="credit_card">
-                                                <i class="fas fa-credit-card me-2"></i>Credit Card
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
-                                            <label class="form-check-label" for="paypal">
-                                                <i class="fab fa-paypal me-2"></i>PayPal
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="apple_pay" value="apple_pay">
-                                            <label class="form-check-label" for="apple_pay">
-                                                <i class="fab fa-apple-pay me-2"></i>Apple Pay
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
+                            <!-- Stripe Elements -->
+                            <div id="card-element" class="form-control p-3 mb-3">
+                                <!-- Stripe Elements will create form elements here -->
                             </div>
                             
-                            <!-- Credit Card Form -->
-                            <div id="creditCardForm">
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-medium">Card Number</label>
-                                        <input type="text" class="form-control" name="card_number" 
-                                               placeholder="1234 5678 9012 3456" maxlength="19">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-medium">Expiry Date</label>
-                                        <input type="text" class="form-control" name="expiry_date" 
-                                               placeholder="MM/YY" maxlength="5">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-medium">CVV</label>
-                                        <input type="text" class="form-control" name="cvv" 
-                                               placeholder="123" maxlength="4">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-medium">Cardholder Name</label>
-                                        <input type="text" class="form-control" name="cardholder_name" 
-                                               placeholder="Name on card">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- PayPal Form -->
-                            <div id="paypalForm" class="d-none">
-                                <div class="text-center p-4 bg-light rounded">
-                                    <div id="paypal-button-container"></div>
-                                    <div id="paypal-error" class="alert alert-danger d-none mt-3"></div>
-                                </div>
-                            </div>
-                            
-                            <div id="applePayForm" class="d-none">
-                                <div class="text-center p-4 bg-light rounded">
-                                    <i class="fab fa-apple-pay fa-3x mb-3" style="color: #000;"></i>
-                                    <p class="mb-0">Use Touch ID or Face ID to pay with Apple Pay.</p>
-                                </div>
-                            </div>
+                            <!-- Error display -->
+                            <div id="card-error" role="alert" class="alert alert-danger d-none"></div>
                         </div>
                         
                         <!-- Order Notes -->
@@ -145,7 +76,7 @@
                                 <i class="fas fa-sticky-note me-2" style="color: #ea580c;"></i>
                                 Order Notes (Optional)
                             </h5>
-                            <textarea class="form-control" name="order_notes" rows="3" 
+                            <textarea class="form-control" id="orderNotes" rows="3" 
                                       placeholder="Any special instructions for your order..."></textarea>
                         </div>
                         
@@ -242,185 +173,188 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Load PayPal SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id=AQZyS9RlDUHmcfGfNA8XZYIP1jtcMhr5E0GmNL3PxCGAHwVfO-5XAwLXABEZpLTHNn_7RYJHLK9637v-&currency=USD"></script>
-
+<script src="https://js.stripe.com/v3/"></script>
 <script>
-    let paypalButtons = null;
+    const stripe = Stripe('{{ stripe_pk }}');
+    const elements = stripe.elements();
     
-    function initPayPal() {
-        if (paypalButtons) {
-            paypalButtons.close();
-        }
-        
-        paypalButtons = paypal.Buttons({
-            createOrder: function(data, actions) {
-                return fetch('/api/paypal/create-order', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }).then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to create PayPal order');
-                    }
-                    return response.json();
-                }).then(function(order) {
-                    return order.id;
-                }).catch(function(error) {
-                    console.error('PayPal order creation error:', error);
-                    showPayPalError('Failed to create PayPal order. Please try again.');
-                    throw error;
-                });
+    // Create card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                    color: '#aab7c4',
+                },
             },
-            onApprove: function(data, actions) {
-                return fetch(`/api/paypal/capture-order/${data.orderID}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }).then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to capture PayPal order');
-                    }
-                    return response.json();
-                }).then(function(orderData) {
-                    // Store PayPal data in hidden fields
-                    document.getElementById('paypal_order_id').value = data.orderID;
-                    document.getElementById('paypal_payment_id').value = orderData.id;
-                    document.getElementById('paypal_payer_id').value = orderData.payer ? orderData.payer.payer_id : '';
-                    
-                    // Submit the form
-                    document.getElementById('checkoutForm').submit();
-                }).catch(function(error) {
-                    console.error('PayPal capture error:', error);
-                    showPayPalError('Payment capture failed. Please try again.');
-                });
-            },
-            onError: function(err) {
-                console.error('PayPal error:', err);
-                showPayPalError('PayPal payment failed. Please try again or use a different payment method.');
-            },
-            onCancel: function(data) {
-                console.log('PayPal payment cancelled by user');
-                showPayPalError('Payment was cancelled. You can try again or use a different payment method.');
-            }
-        });
-        
-        paypalButtons.render('#paypal-button-container').catch(function(error) {
-            console.error('PayPal render error:', error);
-            showPayPalError('Failed to load PayPal. Please refresh the page or use a different payment method.');
-        });
-    }
-    
-    function showPayPalError(message) {
-        const errorDiv = document.getElementById('paypal-error');
-        errorDiv.textContent = message;
-        errorDiv.classList.remove('d-none');
-        
-        // Hide error after 10 seconds
-        setTimeout(() => {
-            errorDiv.classList.add('d-none');
-        }, 10000);
-    }
-    
-    // Payment method switching
-    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Hide all payment forms
-            document.getElementById('creditCardForm').classList.add('d-none');
-            document.getElementById('paypalForm').classList.add('d-none');
-            document.getElementById('applePayForm').classList.add('d-none');
-            
-            // Hide PayPal error
-            document.getElementById('paypal-error').classList.add('d-none');
-            
-            // Show selected payment form
-            if (this.value === 'credit_card') {
-                document.getElementById('creditCardForm').classList.remove('d-none');
-                document.querySelectorAll('#creditCardForm input').forEach(input => {
-                    input.required = true;
-                });
-            } else {
-                document.querySelectorAll('#creditCardForm input').forEach(input => {
-                    input.required = false;
-                });
-                
-                if (this.value === 'paypal') {
-                    document.getElementById('paypalForm').classList.remove('d-none');
-                    initPayPal();
-                } else if (this.value === 'apple_pay') {
-                    document.getElementById('applePayForm').classList.remove('d-none');
-                }
-            }
-        });
+        },
     });
     
-    // Prevent form submission when PayPal is selected
-    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-        const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-        
-        if (paymentMethod === 'paypal') {
-            // Check if PayPal payment was completed
-            if (!document.getElementById('paypal_order_id').value) {
-                e.preventDefault();
-                showPayPalError('Please complete PayPal payment first.');
-                return;
-            }
-        }
-        
-        const submitBtn = document.getElementById('placeOrderBtn');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing Payment...';
-        submitBtn.disabled = true;
-    });
+    cardElement.mount('#card-element');
     
-    // Card validation functions (keeping existing code)
-    function validateCardNumber(cardNumber) {
-        const digits = cardNumber.replace(/\D/g, '');
-        let sum = 0;
-        let isEven = false;
-        
-        for (let i = digits.length - 1; i >= 0; i--) {
-            let digit = parseInt(digits[i]);
-            
-            if (isEven) {
-                digit *= 2;
-                if (digit > 9) {
-                    digit -= 9;
-                }
-            }
-            
-            sum += digit;
-            isEven = !isEven;
-        }
-        
-        return sum % 10 === 0 && digits.length >= 13;
-    }
-    
-    // Card number formatting
-    document.querySelector('input[name="card_number"]').addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
-        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-        e.target.value = formattedValue;
-        
-        if (value.length >= 13) {
-            if (validateCardNumber(value)) {
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-            } else {
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-            }
+    // Handle real-time validation errors from the card Element
+    cardElement.on('change', ({error}) => {
+        const displayError = document.getElementById('card-error');
+        if (error) {
+            displayError.textContent = error.message;
+            displayError.classList.remove('d-none');
         } else {
-            e.target.classList.remove('is-valid', 'is-invalid');
+            displayError.classList.add('d-none');
         }
     });
     
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('#creditCardForm input').forEach(input => {
-            input.required = true;
+    // Handle form submission
+    const form = document.getElementById('checkoutForm');
+    const submitBtn = document.getElementById('placeOrderBtn');
+    
+    // Updated checkout form submission handler
+// Updated form submission handler with better CSRF token handling
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    // Disable submit button and show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing Payment...';
+    submitBtn.disabled = true;
+    
+    try {
+        // Try multiple ways to get CSRF token
+        let csrfToken = null;
+        
+        // Method 1: Look for hidden input field
+        const csrfInput = document.querySelector('input[name="csrf_token"]');
+        if (csrfInput) {
+            csrfToken = csrfInput.value;
+        } else {
+            // Method 2: Look for meta tag (add this to your HTML head)
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                csrfToken = csrfMeta.content;
+            }
+        }
+        
+        console.log('CSRF token found:', csrfToken ? 'yes' : 'no'); // Debug log
+        
+        // Create headers object
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Only add CSRF token if found
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        
+        // Create payment intent
+        const response = await fetch('/create-payment-intent', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                action: 'create_payment_intent' // Include some data
+            })
         });
-    });
+        
+        console.log('Response status:', response.status); // Debug log
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+            throw new Error(errorData.error || 'Failed to create payment intent');
+        }
+        
+        const { client_secret } = await response.json();
+        
+        // Collect shipping information
+        const shippingInfo = {
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
+            address: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            zip_code: document.getElementById('zipCode').value
+        };
+        
+        // Confirm payment
+        const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+            payment_method: {
+                card: cardElement,
+                billing_details: {
+                    name: `${shippingInfo.first_name} ${shippingInfo.last_name}`,
+                    address: {
+                        line1: shippingInfo.address,
+                        city: shippingInfo.city,
+                        state: shippingInfo.state,
+                        postal_code: shippingInfo.zip_code,
+                        country: 'US',
+                    }
+                },
+            }
+        });
+        
+        if (error) {
+            console.error('Stripe error:', error);
+            // Show error to customer
+            const errorElement = document.getElementById('card-error');
+            errorElement.textContent = error.message;
+            errorElement.classList.remove('d-none');
+            
+            // Re-enable submit button
+            submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Place Order Securely';
+            submitBtn.disabled = false;
+        } else {
+            // Payment succeeded, process the order
+            const processHeaders = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (csrfToken) {
+                processHeaders['X-CSRFToken'] = csrfToken;
+            }
+            
+            const processResponse = await fetch('/process-stripe-payment', {
+                method: 'POST',
+                headers: processHeaders,
+                body: JSON.stringify({
+                    payment_intent_id: paymentIntent.id,
+                    shipping_info: shippingInfo,
+                    order_notes: document.getElementById('orderNotes').value
+                })
+            });
+            
+            const result = await processResponse.json();
+            
+            if (result.success) {
+                // Redirect to order confirmation
+                window.location.href = `/order-confirmation/${result.order_id}`;
+            } else {
+                throw new Error(result.error);
+            }
+        }
+    } catch (error) {
+        console.error('Payment error:', error);
+        
+        // Show error to customer
+        const errorElement = document.getElementById('card-error');
+        errorElement.textContent = error.message || 'An error occurred while processing your payment';
+        errorElement.classList.remove('d-none');
+        
+        // Re-enable submit button
+        submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Place Order Securely';
+        submitBtn.disabled = false;
+    }
+});
 </script>
 {% endblock %}

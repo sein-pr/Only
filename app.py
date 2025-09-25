@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from flask_wtf.csrf import CSRFProtect  # Added CSRF protection import
+from flask_wtf.csrf import CSRFProtect
+# from flask_wtf.csrf import exempt
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange
 from models.models import db, User, Category, Product, Order, OrderItem, CartItem
@@ -21,10 +22,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///only.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-csrf = CSRFProtect(app)
+# csrf = CSRFProtect(app)
 
-stripe.api_key = 'sk_test_51S6EpwFqTd4ZYPM4scrrMYa7tcqKq09tcoEb16OCxwcHTroxGJ3cQyesZZcIZVntKCP3w9Mi3Mj3UUBUzqXa4nXx00PoMSg0Fm'
-app.config['STRIPE_PUBLISHABLE_KEY'] = 'pk_test_51S6EpwFqTd4ZYPM4gyqefCN2WoHmmqM7SeQqjR1Tf0r7e0Tco9VAjRsD4lhLq1eiZCLKIE7WY8M37MUdCzTcTpO000KNlevrJH'
+stripe.api_key = 'sk_test_51SBGRFA3Xw82lRlh6xutx1p9SqHtp4ilApW5IJox6Repd53kAxRoMNELJDKlrhEe0YaQUpX3de0YN1BBoONTrSij00uymkBE0k'
+app.config['STRIPE_PUBLISHABLE_KEY'] = 'pk_test_51SBGRFA3Xw82lRlh0RJIc9S7s3VL0DzsOhrpMohObh33C5VHjnYeMcRyqh8htK3ZS3Po1gF2sHiXx6C7SJNiQFql00qYiolhN6'
 
 mail = Mail(app)
 
@@ -253,7 +254,7 @@ def cart():
 
     return render_template(
         "cart.html",
-        cart_items=cart_items,  # Pass the original cart items, not processed data
+        cart_items=cart_items,
         total=total,
         tax=tax,
         shipping=shipping,
@@ -262,6 +263,7 @@ def cart():
     )
 
 @app.route('/add-to-cart/<int:product_id>', methods=['POST'])
+# @csrf.exempt
 def add_to_cart(product_id):
     product = Product.query.get_or_404(product_id)
     quantity = int(request.form.get('quantity', 1))
@@ -343,6 +345,7 @@ def api_cart_count():
     return jsonify({'count': get_cart_count()})
 
 @app.route('/api/add-to-cart/<int:product_id>', methods=['POST'])
+# @csrf.exempt
 def api_add_to_cart(product_id):
     try:
         product = Product.query.get_or_404(product_id)
@@ -529,7 +532,7 @@ def order_history():
     orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
     return render_template('order_history.html', orders=orders)
 
-@app.route('/checkout')
+@app.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
     session_id = get_session_id()
@@ -548,141 +551,147 @@ def checkout():
     tax = subtotal * tax_rate
     total = subtotal + shipping + tax
     
-    # Format cart data for PayPal integration
-    cart_data_json = []
-    for item in cart_items:
-        cart_data_json.append({
-            'id': item.product_id,
-            'name': item.product.name,
-            'price': float(item.product.price),
-            'quantity': item.quantity
-        })
-    
     return render_template('checkout.html', 
                          cart_items=cart_items,
-                         cart_data_json=cart_data_json,
                          subtotal=subtotal,
                          shipping=shipping,
                          tax=tax,
-                         total=total)
+                         total=total,
+                         stripe_pk=app.config['STRIPE_PUBLISHABLE_KEY'])
 
-@app.route('/process-order', methods=['POST'])
+# Stripe Routes
+@app.route('/create-payment-intent', methods=['POST'])
 @login_required
-def process_order():
-    session_id = get_session_id()
-    cart_items = CartItem.query.filter_by(session_id=session_id).all()
-    
-    if not cart_items:
-        flash('Your cart is empty.', 'error')
-        return redirect(url_for('cart'))
-    
-    payment_method = request.form.get('payment_method')
-    shipping_info = {
-        'first_name': request.form.get('first_name'),
-        'last_name': request.form.get('last_name'),
-        'address': request.form.get('address'),
-        'city': request.form.get('city'),
-        'state': request.form.get('state'),
-        'zip_code': request.form.get('zip_code')
-    }
-    
-    # Calculate totals using Decimal for consistency
-    subtotal = sum(item.product.price * item.quantity for item in cart_items)
-    shipping_threshold = Decimal("50.00")
-    shipping_cost = Decimal("5.99")
-    tax_rate = Decimal("0.08")
-    
-    shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
-    tax = subtotal * tax_rate
-    total = subtotal + shipping + tax
-    
-    payment_successful = False
-    payment_id = None
-    
+def create_payment_intent():
     try:
-        if payment_method == 'credit_card':
-            # Simulate Stripe payment processing
-            card_number = request.form.get('card_number', '').replace(' ', '')
-            
-            # In a real app, you would use Stripe's API here
-            if card_number and len(card_number) >= 13:
-                payment_successful = True
-                payment_id = f"pi_{str(uuid.uuid4())[:24]}"
-            else:
-                flash('Invalid card information. Please check your details.', 'error')
-                return redirect(url_for('checkout'))
-                
-        elif payment_method == 'paypal':
-            # Handle PayPal payment - check for PayPal transaction data
-            paypal_order_id = request.form.get('paypal_order_id')
-            paypal_payment_id = request.form.get('paypal_payment_id')
-            paypal_payer_id = request.form.get('paypal_payer_id')
-            
-            if paypal_order_id and paypal_payment_id:
-                # In a real app, you would verify the PayPal payment here
-                # using PayPal's API to ensure the payment is legitimate
-                payment_successful = True
-                payment_id = paypal_payment_id
-                print(f"PayPal payment processed: Order ID {paypal_order_id}, Payment ID {paypal_payment_id}")
-            else:
-                flash('PayPal payment verification failed. Please try again.', 'error')
-                return redirect(url_for('checkout'))
-            
-        elif payment_method == 'apple_pay':
-            # Simulate Apple Pay processing
-            payment_successful = True
-            payment_id = f"ap_{str(uuid.uuid4())[:24]}"
+        session_id = get_session_id()
+        cart_items = CartItem.query.filter_by(session_id=session_id).all()
         
-        if not payment_successful:
-            flash('Payment processing failed. Please try again.', 'error')
-            return redirect(url_for('checkout'))
-            
-    except Exception as e:
-        flash('Payment processing error. Please try again.', 'error')
-        return redirect(url_for('checkout'))
-    
-    # Create order
-    order_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
-    
-    order = Order(
-        order_number=order_number,
-        user_id=session['user_id'],
-        total_amount=total,
-        status='confirmed'
-    )
-    db.session.add(order)
-    db.session.flush()  # Get the order ID
-    
-    # Create order items and update stock
-    for cart_item in cart_items:
-        # Check stock availability
-        if cart_item.product.stock_quantity < cart_item.quantity:
-            db.session.rollback()
-            flash(f'Sorry, {cart_item.product.name} is out of stock.', 'error')
-            return redirect(url_for('cart'))
+        if not cart_items:
+            return jsonify({'error': 'Cart is empty'}), 400
         
-        # Create order item
-        order_item = OrderItem(
-            order_id=order.id,
-            product_id=cart_item.product_id,
-            quantity=cart_item.quantity,
-            price=cart_item.product.price
+        # Calculate total
+        subtotal = sum(item.product.price * item.quantity for item in cart_items)
+        shipping_threshold = Decimal("50.00")
+        shipping_cost = Decimal("5.99")
+        tax_rate = Decimal("0.08")
+        
+        shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
+        tax = subtotal * tax_rate
+        total = subtotal + shipping + tax
+        
+        # Convert to cents for Stripe (ensure it's an integer)
+        amount_in_cents = int(total * 100)
+        
+        print(f"Creating payment intent for amount: {amount_in_cents} cents (${total})")  # Debug log
+        
+        # Verify Stripe key is set
+        if not stripe.api_key:
+            print("Stripe API key not set!")
+            return jsonify({'error': 'Payment system not configured'}), 500
+        
+        # Create payment intent
+        intent = stripe.PaymentIntent.create(
+            amount=amount_in_cents,
+            currency='usd',
+            automatic_payment_methods={
+                'enabled': True,
+            },
+            metadata={
+                'user_id': str(session['user_id']),
+                'session_id': session_id,
+                'order_type': 'online_purchase'
+            }
         )
-        db.session.add(order_item)
         
-        # Update stock
-        cart_item.product.stock_quantity -= cart_item.quantity
-    
-    # Clear cart
-    for cart_item in cart_items:
-        db.session.delete(cart_item)
-    
-    db.session.commit()
-    
-    send_order_confirmation_email(order)
-    
-    flash(f'Order {order_number} placed successfully! Confirmation email sent.', 'success')
-    return redirect(url_for('order_confirmation', order_id=order.id))
+        print(f"Payment intent created successfully: {intent.id}")  # Debug log
+        
+        return jsonify({
+            'client_secret': intent.client_secret
+        })
+        
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {str(e)}")
+        return jsonify({'error': f'Payment system error: {str(e)}'}), 500
+    except Exception as e:
+        print(f"General error in create_payment_intent: {str(e)}")
+        import traceback
+        traceback.print_exc()  # This will help debug the exact error
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/process-stripe-payment', methods=['POST'])
+@login_required
+def process_stripe_payment():
+    try:
+        data = request.get_json()
+        payment_intent_id = data.get('payment_intent_id')
+        shipping_info = data.get('shipping_info')
+        
+        # Verify payment intent
+        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
+        if intent.status != 'succeeded':
+            return jsonify({'success': False, 'error': 'Payment not completed'}), 400
+        
+        session_id = get_session_id()
+        cart_items = CartItem.query.filter_by(session_id=session_id).all()
+        
+        if not cart_items:
+            return jsonify({'success': False, 'error': 'Cart is empty'}), 400
+        
+        # Calculate totals
+        subtotal = sum(item.product.price * item.quantity for item in cart_items)
+        shipping_threshold = Decimal("50.00")
+        shipping_cost = Decimal("5.99")
+        tax_rate = Decimal("0.08")
+        
+        shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
+        tax = subtotal * tax_rate
+        total = subtotal + shipping + tax
+        
+        # Create order
+        order_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        
+        order = Order(
+            order_number=order_number,
+            user_id=session['user_id'],
+            total_amount=total,
+            status='confirmed'
+        )
+        db.session.add(order)
+        db.session.flush()
+        
+        # Create order items and update stock
+        for cart_item in cart_items:
+            if cart_item.product.stock_quantity < cart_item.quantity:
+                db.session.rollback()
+                return jsonify({'success': False, 'error': f'{cart_item.product.name} is out of stock'}), 400
+            
+            order_item = OrderItem(
+                order_id=order.id,
+                product_id=cart_item.product_id,
+                quantity=cart_item.quantity,
+                price=cart_item.product.price
+            )
+            db.session.add(order_item)
+            cart_item.product.stock_quantity -= cart_item.quantity
+        
+        # Clear cart
+        for cart_item in cart_items:
+            db.session.delete(cart_item)
+        
+        db.session.commit()
+        
+        send_order_confirmation_email(order)
+        
+        return jsonify({
+            'success': True,
+            'order_id': order.id,
+            'order_number': order_number
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/order-confirmation/<int:order_id>')
 @login_required
@@ -790,63 +799,6 @@ def reorder(order_id):
             'success': False,
             'message': 'Failed to reorder items'
         }), 500
-
-# PayPal API Routes
-@app.route('/api/paypal/create-order', methods=['POST'])
-@login_required
-@csrf.exempt  # Exempt PayPal API routes from CSRF protection
-def create_paypal_order():
-    """Create PayPal order for checkout - simplified version"""
-    try:
-        session_id = get_session_id()
-        cart_items = CartItem.query.filter_by(session_id=session_id).all()
-        
-        if not cart_items:
-            return jsonify({'error': 'Cart is empty'}), 400
-        
-        # Calculate total amount
-        subtotal = sum(item.product.price * item.quantity for item in cart_items)
-        shipping_threshold = Decimal("50.00")
-        shipping_cost = Decimal("5.99")
-        tax_rate = Decimal("0.08")
-        
-        shipping = Decimal("0.00") if subtotal >= shipping_threshold else shipping_cost
-        tax = subtotal * tax_rate
-        total_amount = subtotal + shipping + tax
-        
-        # For demo purposes, return a mock PayPal order ID
-        # In production, you would use the actual PayPal SDK here
-        mock_order_id = f"PAYPAL_{str(uuid.uuid4())[:8].upper()}"
-        
-        return jsonify({
-            'id': mock_order_id,
-            'status': 'CREATED'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"PayPal order creation failed: {str(e)}")
-        return jsonify({'error': 'Failed to create PayPal order'}), 500
-
-@app.route('/api/paypal/capture-order/<order_id>', methods=['POST'])
-@login_required
-@csrf.exempt  # Exempt PayPal API routes from CSRF protection
-def capture_paypal_order(order_id):
-    """Capture PayPal order after approval - simplified version"""
-    try:
-        # For demo purposes, simulate successful capture
-        # In production, you would use the actual PayPal SDK here
-        return jsonify({
-            'id': order_id,
-            'status': 'COMPLETED',
-            'payer': {
-                'email_address': 'customer@example.com',
-                'payer_id': f"PAYER_{str(uuid.uuid4())[:8]}"
-            }
-        })
-        
-    except Exception as e:
-        app.logger.error(f"PayPal order capture failed: {str(e)}")
-        return jsonify({'error': 'Failed to capture PayPal order'}), 500
 
 # Email Notification Function
 def send_order_confirmation_email(order):

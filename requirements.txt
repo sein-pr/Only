@@ -4,5 +4,4 @@ Flask-WTF
 Flask-Mail
 Werkzeug
 stripe
-paypal-server-sdk==1.0.0
 email-validator
