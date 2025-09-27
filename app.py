@@ -15,6 +15,7 @@ from flask_mail import Mail, Message
 import stripe
 from decimal import Decimal
 import logging
+from dotenv import load_dotenv # Import to load .env file
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -24,8 +25,11 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # csrf = CSRFProtect(app)
 
-stripe.api_key = 'sk_test_51SBGRFA3Xw82lRlh6xutx1p9SqHtp4ilApW5IJox6Repd53kAxRoMNELJDKlrhEe0YaQUpX3de0YN1BBoONTrSij00uymkBE0k'
-app.config['STRIPE_PUBLISHABLE_KEY'] = 'pk_test_51SBGRFA3Xw82lRlh0RJIc9S7s3VL0DzsOhrpMohObh33C5VHjnYeMcRyqh8htK3ZS3Po1gF2sHiXx6C7SJNiQFql00qYiolhN6'
+# 2. Read Stripe Secret Key (for server-side operations)
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY') 
+
+# 3. Read Stripe Publishable Key (for client-side/frontend integration)
+app.config['STRIPE_PUBLISHABLE_KEY'] = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 
 mail = Mail(app)
 
