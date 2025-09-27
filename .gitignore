@@ -1,0 +1,29 @@
+# ----------------------------------------
+# Environment/Secret Files
+# Prevents keys/secrets from being committed
+# ----------------------------------------
+.env
+.flaskenv
+*.key
+*.pem
+
+# ----------------------------------------
+# Dependencies
+# ----------------------------------------
+/venv/
+__pycache__/
+*.pyc
+
+# ----------------------------------------
+# Database Files
+# ----------------------------------------
+*.sqlite
+/instance/*.sqlite
+/only.db  # This specifically ignores the file from your example code
+
+# ----------------------------------------
+# OS and Editor Files
+# ----------------------------------------
+.DS_Store
+*.sublime-*
+.vscode/
