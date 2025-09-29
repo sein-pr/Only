@@ -553,6 +553,46 @@ def add_product():
     
     return render_template('seller/add_product.html', form=form)
 
+@app.route('/seller/edit-product/<int:product_id>', methods=['GET', 'POST'])
+@seller_required
+def edit_product(product_id):
+    # Get the product and ensure it belongs to the current seller
+    product = Product.query.filter_by(id=product_id, seller_id=session['user_id']).first_or_404()
+    
+    form = ProductForm()
+    form.category_id.choices = [(c.id, c.name) for c in Category.query.all()]
+    
+    if form.validate_on_submit():
+        # Update product fields
+        product.name = form.name.data
+        product.description = form.description.data
+        product.price = form.price.data
+        product.stock_quantity = form.stock_quantity.data
+        product.category_id = form.category_id.data
+        
+        # Handle file upload (only if new image is provided)
+        if form.image.data:
+            filename = secure_filename(form.image.data.filename)
+            if filename:
+                filename = f"{uuid.uuid4()}_{filename}"
+                form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                product.image_url = f"/static/uploads/{filename}"
+        
+        db.session.commit()
+        
+        flash('Product updated successfully!', 'success')
+        return redirect(url_for('seller_products'))
+    
+    # Pre-populate form with existing product data
+    if request.method == 'GET':
+        form.name.data = product.name
+        form.description.data = product.description
+        form.price.data = product.price
+        form.stock_quantity.data = product.stock_quantity
+        form.category_id.data = product.category_id
+    
+    return render_template('edit_product.html', form=form, product=product)
+
 # Order Routes
 @app.route('/order-history')
 @login_required

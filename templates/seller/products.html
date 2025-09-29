@@ -173,9 +173,8 @@
 {% block scripts %}
 <script>
     function editProduct(productId) {
-        // For now, redirect to add product page
-        // In a full implementation, this would be an edit form
-        alert('Edit functionality coming soon!');
+        // Redirect to edit product page
+        window.location.href = `/seller/edit-product/${productId}`;
     }
     
     function duplicateProduct(productId) {
