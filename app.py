@@ -157,7 +157,7 @@ def login():
             else:
                 session['session_id'] = f"user_{user.id}"
             
-            flash(f'Welcome back, {user.username}!', 'success')
+            #flash(f'Welcome back, {user.username}!', 'success')
             
             # Redirect based on user role
             if user.role == 'seller':
@@ -220,7 +220,7 @@ def register():
 def logout():
     username = session.get('username', 'User')
     session.clear()
-    flash(f'Goodbye, {username}! You have been logged out.', 'info')
+    #flash(f'Goodbye, {username}! You have been logged out.', 'info')
     return redirect(url_for('home'))
 
 # Main Routes
@@ -231,27 +231,75 @@ def home():
     categories = Category.query.all()
     return render_template('home.html', featured_products=featured_products, categories=categories)
 
+from decimal import Decimal # Ensure this import is present at the top of the file
+
 @app.route('/shop')
 def shop():
     page = request.args.get('page', 1, type=int)
     category_id = request.args.get('category', type=int)
     search = request.args.get('search', '')
+    sort_by = request.args.get('sort_by', 'newest') # Default sort is 'newest'
     
+    # 1. Price Filtering Parameters
+    min_price_str = request.args.get('min_price')
+    max_price_str = request.args.get('max_price')
+    
+    min_price = None
+    max_price = None
+    
+    try:
+        # Convert price strings to Decimal for accurate database queries
+        if min_price_str:
+            min_price = Decimal(min_price_str)
+        if max_price_str:
+            max_price = Decimal(max_price_str)
+    except:
+        # Log or ignore bad input, setting to None effectively disables filter
+        pass 
+
     query = Product.query
     
     if category_id:
         query = query.filter_by(category_id=category_id)
     
     if search:
-        query = query.filter(Product.name.contains(search))
-    
+        # Use ilike for case-insensitive search in PostgreSQL
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+        
+    # Apply Price Range Filters
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+        
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+        
+    # 2. Sorting Logic
+    if sort_by == 'price_asc':
+        # Price: Low to High
+        query = query.order_by(Product.price.asc())
+    elif sort_by == 'price_desc':
+        # Price: High to Low
+        query = query.order_by(Product.price.desc())
+    elif sort_by == 'name_asc':
+        # Name A - Z
+        query = query.order_by(Product.name.asc())
+    else: 
+        # Newest First (Default)
+        query = query.order_by(Product.created_at.desc())
+
     products = query.paginate(
         page=page, per_page=12, error_out=False
     )
     
     categories = Category.query.all()
-    return render_template('shop.html', products=products, categories=categories, 
-                         current_category=category_id, search=search)
+    return render_template('shop.html', 
+                          products=products, 
+                          categories=categories, 
+                          current_category=category_id, 
+                          search=search,
+                          min_price=min_price_str, # Pass original strings back to template
+                          max_price=max_price_str,
+                          sort_by=sort_by) # Pass sort option back to template
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
@@ -490,22 +538,85 @@ def product_quick_view(product_id):
 @seller_required
 def seller_dashboard():
     user_id = session['user_id']
-    
+
     # Get seller statistics
     total_products = Product.query.filter_by(seller_id=user_id).count()
-    total_orders = db.session.query(Order).join(OrderItem).join(Product).filter(
-        Product.seller_id == user_id
-    ).count()
+
+    total_orders = (
+        db.session.query(Order)
+        .join(OrderItem)
+        .join(Product)
+        .filter(Product.seller_id == user_id)
+        .count()
+    )
+
+    # Calculate total revenue (sum of order item prices * quantity for this seller)
+    total_revenue = (
+        db.session.query(db.func.sum(OrderItem.price * OrderItem.quantity))
+        .join(Product)
+        .filter(Product.seller_id == user_id)
+        .scalar()
+    ) or 0
+
+    # Recent products
+    recent_products = (
+        Product.query.filter_by(seller_id=user_id)
+        .order_by(Product.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    # Recent orders for this seller
+    recent_orders = (
+        db.session.query(Order)
+        .join(OrderItem)
+        .join(Product)
+        .filter(Product.seller_id == user_id)
+        .order_by(Order.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    return render_template(
+        'seller/dashboard.html',
+        total_products=total_products,
+        total_orders=total_orders,
+        total_revenue=total_revenue,
+        recent_products=recent_products,
+        recent_orders=recent_orders,
+    )
+
+@app.route('/seller/duplicate-product/<int:product_id>', methods=['POST'])
+@seller_required
+def duplicate_product(product_id):
+    """Duplicates an existing product, setting the name to 'COPY of...'"""
+    # 1. Get the original product and ensure seller ownership
+    original_product = Product.query.filter_by(
+        id=product_id, 
+        seller_id=session['user_id']
+    ).first_or_404()
     
-    # Get recent products
-    recent_products = Product.query.filter_by(seller_id=user_id).order_by(
-        Product.created_at.desc()
-    ).limit(5).all()
+    # 2. Create a new Product object by copying attributes
+    new_product = Product(
+        # Create a distinct name
+        name=f"COPY of {original_product.name}",
+        description=original_product.description,
+        price=original_product.price,
+        stock_quantity=original_product.stock_quantity,
+        category_id=original_product.category_id,
+        seller_id=original_product.seller_id, # Inherits the seller ID
+        image_url=original_product.image_url,
+        created_at=datetime.utcnow() # Set a new creation date
+    )
     
-    return render_template('seller/dashboard.html', 
-                         total_products=total_products,
-                         total_orders=total_orders,
-                         recent_products=recent_products)
+    # 3. Save the new product to the database
+    db.session.add(new_product)
+    db.session.commit()
+    
+    flash(f'Product "{original_product.name}" duplicated successfully. You are now editing the copy.', 'success')
+    
+    # Redirect to the edit page of the new product
+    return redirect(url_for('edit_product', product_id=new_product.id))
 
 @app.route('/seller/products')
 @seller_required
@@ -518,6 +629,28 @@ def seller_products():
     )
     
     return render_template('seller/products.html', products=products)
+
+@app.route('/seller/delete-product/<int:product_id>', methods=['POST'])
+@seller_required
+def delete_product(product_id):
+    """Deletes a product and ensures it belongs to the current seller."""
+    
+    # 1. Get the product and verify ownership
+    product = Product.query.filter_by(
+        id=product_id, 
+        seller_id=session['user_id']
+    ).first_or_404()
+    
+    product_name = product.name
+    
+    # 2. Delete the product
+    db.session.delete(product)
+    db.session.commit()
+    
+    flash(f'Product "{product_name}" deleted successfully.', 'info')
+    
+    # Redirect back to the seller product list
+    return redirect(url_for('seller_products'))
 
 @app.route('/seller/add-product', methods=['GET', 'POST'])
 @seller_required
@@ -967,4 +1100,5 @@ if __name__ == '__main__':
                 db.session.add(category)
             db.session.commit()
     
-    app.run(debug=True)
+        
+app.run(port="5002",debug=True)

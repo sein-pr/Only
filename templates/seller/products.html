@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="container py-5">
-    <!-- Header -->
     <div class="row align-items-center mb-4">
         <div class="col-md-8">
             <h1 class="fw-bold mb-2">Manage Products</h1>
@@ -17,7 +16,6 @@
         </div>
     </div>
     
-    <!-- Products Table -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0">
             <div class="d-flex justify-content-between align-items-center">
@@ -53,8 +51,8 @@
                                 <td class="px-4 py-3">
                                     <div class="d-flex align-items-center">
                                         <img src="{{ product.image_url or '/placeholder.svg?height=60&width=60' }}" 
-                                             alt="{{ product.name }}" class="me-3 rounded"
-                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                            alt="{{ product.name }}" class="me-3 rounded"
+                                            style="width: 60px; height: 60px; object-fit: cover;">
                                         <div>
                                             <h6 class="mb-1 fw-bold">{{ product.name }}</h6>
                                             <small class="text-muted">
@@ -88,7 +86,7 @@
                                 <td class="py-3">
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ url_for('product_detail', product_id=product.id) }}" 
-                                           class="btn btn-outline-primary" title="View">
+                                        class="btn btn-outline-primary" title="View">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <button class="btn btn-outline-secondary" 
@@ -111,7 +109,6 @@
                     </table>
                 </div>
                 
-                <!-- Pagination -->
                 {% if products.pages > 1 %}
                 <div class="card-footer bg-white border-0">
                     <nav>
@@ -178,25 +175,47 @@
     }
     
     function duplicateProduct(productId) {
-        if (confirm('Create a copy of this product?')) {
-            // Implement duplication logic
-            alert('Duplicate functionality coming soon!');
+        if (confirm('Create a copy of this product? The copied product will open on the edit page.')) {
+            // Send a POST request to the Flask route
+            fetch(`/seller/duplicate-product/${productId}`, {
+                method: 'POST',
+            })
+            .then(response => {
+                // Since Flask returns a redirect to the edit page, we follow it.
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    // Handle non-redirected status codes (e.g., 403 Forbidden, 404 Not Found)
+                    alert('An error occurred during duplication. Please check product ownership.');
+                    location.reload(); 
+                }
+            })
+            .catch(error => {
+                console.error('Error duplicating product:', error);
+                alert('An error occurred while connecting to the server.');
+            });
         }
     }
     
     function deleteProduct(productId) {
-        if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-            // Implement deletion logic
+        if (confirm('⚠️ WARNING: Are you sure you want to permanently delete this product? This action cannot be undone.')) {
+            // Send a POST request to the Flask route
             fetch(`/seller/delete-product/${productId}`, {
-                method: 'DELETE'
+                method: 'POST',
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
+            .then(response => {
+                // Since Flask returns a redirect back to the products list, we follow it.
+                if (response.redirected) {
+                    window.location.href = response.url;
                 } else {
-                    alert('Error deleting product');
+                    // Handle non-redirected status codes
+                    alert('An error occurred during deletion. Please check product ownership.');
+                    location.reload();
                 }
+            })
+            .catch(error => {
+                console.error('Error deleting product:', error);
+                alert('An error occurred while connecting to the server.');
             });
         }
     }

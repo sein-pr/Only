@@ -22,9 +22,7 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm dashboard-card h-100">
                 <div class="card-body text-center">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-box"></i>
-                    </div>
+                    <div class="feature-icon mb-3"><i class="fas fa-box"></i></div>
                     <h3 class="fw-bold mb-1" style="color: #ea580c;">{{ total_products }}</h3>
                     <p class="text-muted mb-0">Total Products</p>
                 </div>
@@ -34,9 +32,7 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm dashboard-card h-100">
                 <div class="card-body text-center">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
+                    <div class="feature-icon mb-3"><i class="fas fa-shopping-cart"></i></div>
                     <h3 class="fw-bold mb-1" style="color: #ea580c;">{{ total_orders }}</h3>
                     <p class="text-muted mb-0">Total Orders</p>
                 </div>
@@ -46,10 +42,8 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm dashboard-card h-100">
                 <div class="card-body text-center">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #ea580c;">$2,450</h3>
+                    <div class="feature-icon mb-3"><i class="fas fa-dollar-sign"></i></div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">${{ "%.2f"|format(total_revenue) }}</h3>
                     <p class="text-muted mb-0">Total Revenue</p>
                 </div>
             </div>
@@ -58,10 +52,8 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm dashboard-card h-100">
                 <div class="card-body text-center">
-                    <div class="feature-icon mb-3">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #ea580c;">4.8</h3>
+                    <div class="feature-icon mb-3"><i class="fas fa-star"></i></div>
+                    <h3 class="fw-bold mb-1" style="color: #ea580c;">{{ average_rating }}</h3>
                     <p class="text-muted mb-0">Average Rating</p>
                 </div>
             </div>
@@ -125,7 +117,7 @@
                             <small class="text-muted">New Customers</small>
                         </div>
                         <div class="col-4">
-                            <div class="fw-bold">4.8</div>
+                            <div class="fw-bold">{{ average_rating }}</div>
                             <small class="text-muted">Avg Rating</small>
                         </div>
                     </div>
@@ -136,13 +128,9 @@
     
     <!-- Recent Products -->
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold">Recent Products</h5>
-                <a href="{{ url_for('seller_products') }}" class="btn btn-outline-primary btn-sm">
-                    View All Products
-                </a>
-            </div>
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Recent Products</h5>
+            <a href="{{ url_for('seller_products') }}" class="btn btn-outline-primary btn-sm">View All Products</a>
         </div>
         <div class="card-body">
             {% if recent_products %}
@@ -164,9 +152,7 @@
                                     </span>
                                     <div class="btn-group btn-group-sm">
                                         <a href="{{ url_for('product_detail', product_id=product.id) }}" 
-                                           class="btn btn-outline-primary">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
+                                           class="btn btn-outline-primary"><i class="fas fa-eye"></i></a>
                                         <button class="btn btn-outline-secondary" onclick="editProduct('{{ product.id }}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -229,7 +215,7 @@
                     <div class="col-md-6">
                         <div class="card border-0 bg-light">
                             <div class="card-body text-center">
-                                <h4 class="fw-bold" style="color: #ea580c;">$2,450</h4>
+                                <h4 class="fw-bold" style="color: #ea580c;">${{ "%.2f"|format(total_revenue) }}</h4>
                                 <p class="text-muted mb-0">Total Revenue</p>
                             </div>
                         </div>
@@ -272,9 +258,8 @@
         window.location.href = `/seller/edit-product/${productId}`;
     }
     
-    // Add some interactive animations
+    // Animate stats cards on load
     document.addEventListener('DOMContentLoaded', function() {
-        // Animate stats cards on load
         const cards = document.querySelectorAll('.dashboard-card');
         cards.forEach((card, index) => {
             setTimeout(() => {

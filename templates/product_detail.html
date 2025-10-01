@@ -107,8 +107,9 @@
                             <label for="quantity" class="form-label fw-medium">Quantity</label>
                             <select name="quantity" id="quantity" class="form-select" 
                                     {% if product.stock_quantity == 0 %}disabled{% endif %}>
-                                {% for i in range(1, min(product.stock_quantity + 1, 11)) %}
-                                <option value="{{ i }}">{{ i }}</option>
+                                {% set limit = [product.stock_quantity + 1, 11] | min %}
+                                    {% for i in range(1, limit) %}
+                                    <option value="{{ i }}">{{ i }}</option>
                                 {% endfor %}
                             </select>
                         </div>
