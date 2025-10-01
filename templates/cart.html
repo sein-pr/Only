@@ -18,8 +18,8 @@
                         <div class="row align-items-center">
                             <div class="col-md-2">
                                 <img src="{{ item.product.image_url or '/placeholder.svg?height=100&width=100' }}" 
-                                     class="img-fluid rounded" alt="{{ item.product.name }}"
-                                     style="height: 80px; width: 80px; object-fit: cover;">
+                                    class="img-fluid rounded" alt="{{ item.product.name }}"
+                                    style="height: 80px; width: 80px; object-fit: cover;">
                             </div>
                             <div class="col-md-4">
                                 <h6 class="fw-bold mb-1">{{ item.product.name }}</h6>
@@ -38,7 +38,7 @@
                                     <div class="input-group input-group-sm">
                                         <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity(this)">-</button>
                                         <input type="number" name="quantity" class="form-control text-center" 
-                                               value="{{ item.quantity }}" min="1" max="10" onchange="this.form.submit()">
+                                            value="{{ item.quantity }}" min="1" max="10" onchange="this.form.submit()">
                                         <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity(this)">+</button>
                                     </div>
                                 </form>
@@ -50,8 +50,8 @@
                             </div>
                             <div class="col-md-1">
                                 <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" 
-                                   class="btn btn-outline-danger btn-sm" 
-                                   onclick="return confirm('Remove this item from cart?')">
+                                class="btn btn-outline-danger btn-sm" 
+                                onclick="return confirm('Remove this item from cart?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
