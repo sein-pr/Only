@@ -84,3 +84,4 @@ def migrate_user_table():
 
 if __name__ == '__main__':
     migrate_user_table()
+

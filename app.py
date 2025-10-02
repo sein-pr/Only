@@ -9,6 +9,7 @@ from models.models import db, User, Category, Product, Order, OrderItem, CartIte
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from forms.profile_forms import ProfileForm
 import os
 import uuid
 from flask_mail import Mail, Message
@@ -84,23 +85,7 @@ class ProductForm(FlaskForm):
     image = FileField('Product Image')
     additional_images = FileField('Additional Images')
 
-class ProfileForm(FlaskForm):
-    # Personal Information
-    first_name = StringField('First Name', validators=[Length(max=50)])
-    last_name = StringField('Last Name', validators=[Length(max=50)])
-    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    phone = StringField('Phone', validators=[Length(max=20)])
-    address = TextAreaField('Address')
-    avatar = FileField('Profile Avatar')
-    
-    # Company Information (for sellers)
-    company_name = StringField('Company Name', validators=[Length(max=100)])
-    company_description = TextAreaField('Company Description')
-    company_website = StringField('Website', validators=[Length(max=200)])
-    company_phone = StringField('Company Phone', validators=[Length(max=20)])
-    company_address = TextAreaField('Company Address')
-    company_logo = FileField('Company Logo')
+# ProfileForm is now imported from forms/profile_forms.py
 
 # Password reset is handled directly through request.form, no WTForm needed
 
@@ -274,8 +259,41 @@ def profile():
             user.email = form.email.data
             user.first_name = form.first_name.data
             user.last_name = form.last_name.data
-            user.phone = form.phone.data
-            user.address = form.address.data
+            
+            # Update structured phone fields
+            user.phone_country_code = form.phone_country_code.data
+            user.phone_number = form.phone_number.data
+            # Keep legacy fields for backward compatibility
+            if form.phone_country_code.data and form.phone_number.data:
+                user.phone = f"{form.phone_country_code.data}{form.phone_number.data}"
+            else:
+                user.phone = form.phone.data
+            
+            # Update structured address fields
+            user.address_line1 = form.address_line1.data
+            user.address_line2 = form.address_line2.data
+            user.city = form.city.data
+            user.state_province = form.state_province.data
+            user.postal_code = form.postal_code.data
+            user.country = form.country.data
+            # Keep legacy field for backward compatibility
+            if form.address_line1.data or form.city.data or form.country.data:
+                address_parts = []
+                if form.address_line1.data:
+                    address_parts.append(form.address_line1.data)
+                if form.address_line2.data:
+                    address_parts.append(form.address_line2.data)
+                if form.city.data:
+                    address_parts.append(form.city.data)
+                if form.state_province.data:
+                    address_parts.append(form.state_province.data)
+                if form.postal_code.data:
+                    address_parts.append(form.postal_code.data)
+                if form.country.data:
+                    address_parts.append(form.country.data)
+                user.address = ", ".join(address_parts)
+            else:
+                user.address = form.address.data
             
             # Handle avatar upload
             if form.avatar.data:
@@ -290,8 +308,41 @@ def profile():
                 user.company_name = form.company_name.data
                 user.company_description = form.company_description.data
                 user.company_website = form.company_website.data
-                user.company_phone = form.company_phone.data
-                user.company_address = form.company_address.data
+                
+                # Update structured company phone fields
+                user.company_phone_country_code = form.company_phone_country_code.data
+                user.company_phone_number = form.company_phone_number.data
+                # Keep legacy field for backward compatibility
+                if form.company_phone_country_code.data and form.company_phone_number.data:
+                    user.company_phone = f"{form.company_phone_country_code.data}{form.company_phone_number.data}"
+                else:
+                    user.company_phone = form.company_phone.data
+                
+                # Update structured company address fields
+                user.company_address_line1 = form.company_address_line1.data
+                user.company_address_line2 = form.company_address_line2.data
+                user.company_city = form.company_city.data
+                user.company_state_province = form.company_state_province.data
+                user.company_postal_code = form.company_postal_code.data
+                user.company_country = form.company_country.data
+                # Keep legacy field for backward compatibility
+                if form.company_address_line1.data or form.company_city.data or form.company_country.data:
+                    address_parts = []
+                    if form.company_address_line1.data:
+                        address_parts.append(form.company_address_line1.data)
+                    if form.company_address_line2.data:
+                        address_parts.append(form.company_address_line2.data)
+                    if form.company_city.data:
+                        address_parts.append(form.company_city.data)
+                    if form.company_state_province.data:
+                        address_parts.append(form.company_state_province.data)
+                    if form.company_postal_code.data:
+                        address_parts.append(form.company_postal_code.data)
+                    if form.company_country.data:
+                        address_parts.append(form.company_country.data)
+                    user.company_address = ", ".join(address_parts)
+                else:
+                    user.company_address = form.company_address.data
                 
                 # Handle company logo upload
                 if form.company_logo.data:
@@ -450,8 +501,12 @@ def shop():
     else:
         query = query.order_by(Product.created_at.desc())
 
+    # Responsive pagination based on screen size
+    # Default to 9 items per page for better mobile experience
+    per_page = 9
+    
     products = query.paginate(
-        page=page, per_page=12, error_out=False
+        page=page, per_page=per_page, error_out=False
     )
     
     # Get user's wishlist items if logged in
@@ -741,6 +796,13 @@ def add_to_wishlist(product_id):
     try:
         user_id = session['user_id']
         product = Product.query.get_or_404(product_id)
+        
+        # Prevent sellers from adding their own products to wishlist
+        if product.seller_id == user_id:
+            return jsonify({
+                'success': False,
+                'message': 'You cannot add your own products to wishlist!'
+            }), 400
         
         # Check if already in wishlist
         existing_wishlist = Wishlist.query.filter_by(
@@ -1194,6 +1256,19 @@ def order_history():
     user_id = session['user_id']
     orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
     return render_template('order_history.html', orders=orders)
+
+@app.route('/seller/order-history')
+@login_required
+def seller_order_history():
+    """Seller's order history - orders they made as a buyer"""
+    user = User.query.get(session['user_id'])
+    if user.role != 'seller':
+        flash('Access denied. This page is for sellers only.', 'error')
+        return redirect(url_for('home'))
+    
+    # Get orders where the seller is the buyer (not their own products)
+    orders = Order.query.filter_by(user_id=user.id).order_by(Order.created_at.desc()).all()
+    return render_template('seller_order_history.html', orders=orders)
 
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Only{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold mb-2">My Orders</h1>
+            <p class="text-muted mb-0">Orders I placed as a buyer</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('shop') }}" class="btn btn-primary">
+                <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+            </a>
+        </div>
+    </div>
+    
+    {% if orders %}
+        <!-- Orders List -->
+        {% for order in orders %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h6 class="mb-1 fw-bold">Order {{ order.order_number }}</h6>
+                        <small class="text-muted">Placed on {{ order.created_at.strftime('%B %d, %Y') }}</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge bg-{% if order.status == 'confirmed' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'processing' %}info{% elif order.status == 'shipped' %}primary{% elif order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'refund_approved' %}secondary{% else %}secondary{% endif %} me-2">
+                            {{ order.status.replace('_', ' ').title() }}
+                        </span>
+                        <span class="fw-bold" style="color: #ea580c;">${{ "%.2f"|format(order.total_amount) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for item in order.order_items %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ item.product.image_url or '/placeholder.svg?height=60&width=60' }}" 
+                                 alt="{{ item.product.name }}" class="me-3 rounded"
+                                 style="width: 60px; height: 60px; object-fit: cover;">
+                            <div>
+                                <h6 class="mb-1 fw-medium">{{ item.product.name }}</h6>
+                                <small class="text-muted">Qty: {{ item.quantity }} × ${{ "%.2f"|format(item.price) }}</small>
+                                <div class="mt-1">
+                                    <small class="text-muted">Sold by: {{ item.product.seller.username }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="trackOrder('{{ order.order_number }}')" data-order-id="{{ order.id }}">
+                        <i class="fas fa-truck me-1"></i>Track Order
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="reorderItems('{{ order.id }}')">
+                        <i class="fas fa-redo me-1"></i>Reorder
+                    </button>
+                    <a href="{{ url_for('order_confirmation', order_id=order.id) }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-eye me-1"></i>View Details
+                    </a>
+                    {% if order.status == 'pending' or order.status == 'confirmed' %}
+                    <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('{{ order.id }}')">
+                        <i class="fas fa-times me-1"></i>Cancel Order
+                    </button>
+                    {% elif order.status == 'refund_approved' %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check me-1"></i>Refund Approved
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+            <h4 class="text-muted mb-3">No orders yet</h4>
+            <p class="text-muted mb-4">You haven't placed any orders yet. Start shopping to see your order history here.</p>
+            <a href="{{ url_for('shop') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    
+    function trackOrder(orderNumber) {
+        // Show loading state
+        const trackBtn = event.target;
+        const originalText = trackBtn.innerHTML;
+        trackBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        trackBtn.disabled = true;
+        
+        // Get order ID from the order number (you'd need to pass this in the template)
+        const orderId = trackBtn.getAttribute('data-order-id');
+        
+        fetch(`/api/order/${orderId}/track`)
+            .then(response => response.json())
+            .then(data => {
+                showTrackingModal(data);
+            })
+            .catch(error => {
+                alert('Unable to load tracking information. Please try again later.');
+            })
+            .finally(() => {
+                trackBtn.innerHTML = originalText;
+                trackBtn.disabled = false;
+            });
+    }
+    
+    function showTrackingModal(trackingData) {
+        // Create modal HTML
+        const modalHTML = `
+            <div class="modal fade" id="trackingModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Order Tracking - ${trackingData.order_number}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Status:</strong> 
+                                    <span class="badge bg-primary">${trackingData.status}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Estimated Delivery:</strong> ${trackingData.estimated_delivery}
+                                </div>
+                            </div>
+                            
+                            <div class="tracking-timeline">
+                                ${trackingData.tracking_stages.map((stage, index) => `
+                                    <div class="tracking-stage ${stage.completed ? 'completed' : ''}">
+                                        <div class="stage-icon">
+                                            <i class="fas ${stage.completed ? 'fa-check-circle' : 'fa-circle'}"></i>
+                                        </div>
+                                        <div class="stage-content">
+                                            <h6 style="margin-left:1rem;">${stage.status}</h6>
+                                            ${stage.date ? `<small class="text-muted" style="margin-left:1rem;">${new Date(stage.date).toLocaleDateString()}</small>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        const existingModal = document.getElementById('trackingModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('trackingModal'));
+        modal.show();
+    }
+    
+    function reorderItems(orderId) {
+        if (confirm('Add all items from this order to your cart?')) {
+            const reorderBtn = event.target;
+            const originalText = reorderBtn.innerHTML;
+            reorderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+            reorderBtn.disabled = true;
+            
+            fetch(`/api/reorder/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update cart count in header
+                    const cartBadge = document.querySelector('.cart-count');
+                    if (cartBadge) {
+                        cartBadge.textContent = data.cart_count;
+                    }
+                    
+                    // Show success message
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to reorder items. Please try again.', 'error');
+            })
+            .finally(() => {
+                reorderBtn.innerHTML = originalText;
+                reorderBtn.disabled = false;
+            });
+        }
+    }
+    
+    function cancelOrder(orderId) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            fetch(`/api/order/${orderId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Reload page to show updated status
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to cancel order. Please try again.', 'error');
+            });
+        }
+    }
+    
+    function showToast(message, type) {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+</script>
+
+<style>
+    .tracking-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .tracking-timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .tracking-stage {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .tracking-stage.completed .stage-icon {
+        color: #28a745;
+    }
+    
+    .tracking-stage .stage-icon {
+        position: absolute;
+        left: -22px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+    
+    .tracking-stage .stage-content h6 {
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

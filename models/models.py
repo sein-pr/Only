@@ -15,8 +15,16 @@ class User(db.Model):
     # Profile fields
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
-    phone = db.Column(db.String(20))
-    address = db.Column(db.Text)
+    phone = db.Column(db.String(20))  # Keep for backward compatibility
+    phone_country_code = db.Column(db.String(5))  # e.g., +1, +44, +91
+    phone_number = db.Column(db.String(15))  # The actual phone number
+    address = db.Column(db.Text)  # Keep for backward compatibility
+    address_line1 = db.Column(db.String(100))
+    address_line2 = db.Column(db.String(100))
+    city = db.Column(db.String(50))
+    state_province = db.Column(db.String(50))
+    postal_code = db.Column(db.String(20))
+    country = db.Column(db.String(50))
     avatar_url = db.Column(db.String(200))
     
     # Company/Business fields (mainly for sellers)
@@ -24,8 +32,16 @@ class User(db.Model):
     company_description = db.Column(db.Text)
     company_logo_url = db.Column(db.String(200))
     company_website = db.Column(db.String(200))
-    company_phone = db.Column(db.String(20))
-    company_address = db.Column(db.Text)
+    company_phone = db.Column(db.String(20))  # Keep for backward compatibility
+    company_phone_country_code = db.Column(db.String(5))
+    company_phone_number = db.Column(db.String(15))
+    company_address = db.Column(db.Text)  # Keep for backward compatibility
+    company_address_line1 = db.Column(db.String(100))
+    company_address_line2 = db.Column(db.String(100))
+    company_city = db.Column(db.String(50))
+    company_state_province = db.Column(db.String(50))
+    company_postal_code = db.Column(db.String(20))
+    company_country = db.Column(db.String(50))
 
     # Relationships
     orders = db.relationship('Order', backref='user', lazy=True)

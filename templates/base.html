@@ -27,6 +27,22 @@
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
             border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: linear-gradient(135deg, #ea580c, #f97316) !important;
+            border-bottom: 1px solid #b91c1c;
+        }
+        
+        .navbar.scrolled .navbar-brand,
+        .navbar.scrolled .nav-link {
+            color: white !important;
+        }
+        
+        .navbar.scrolled .navbar-brand:hover,
+        .navbar.scrolled .nav-link:hover {
+            color: #fecaca !important;
         }
         
         .navbar-brand {
@@ -45,7 +61,9 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('home') }}">
                 <img src="{{ url_for('static', filename='images/logo-color.png') }}" 
-                     alt="logo" class="img-fluid" style="height: 1.9rem; width: auto;">
+                     alt="logo" class="img-fluid default-logo" style="height: 1.9rem; width: auto;">
+                <img src="{{ url_for('static', filename='images/logo-white.png') }}" 
+                     alt="logo" class="img-fluid scrolled-logo" style="height: 2.5rem; width: auto; display: none;">
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -94,6 +112,10 @@
                                 {% if session.user_role == 'buyer' %}
                                 <li><a class="dropdown-item" href="{{ url_for('order_history') }}">
                                     <i class="fas fa-history me-2"></i>Order History
+                                </a></li>
+                                {% elif session.user_role == 'seller' %}
+                                <li><a class="dropdown-item" href="{{ url_for('seller_order_history') }}">
+                                    <i class="fas fa-shopping-bag me-2"></i>My Orders
                                 </a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
@@ -347,6 +369,23 @@
         
         document.addEventListener('DOMContentLoaded', function() {
             updateCartBadge();
+            
+            // Header scroll behavior
+            const navbar = document.querySelector('.navbar');
+            const defaultLogo = document.querySelector('.default-logo');
+            const scrolledLogo = document.querySelector('.scrolled-logo');
+            
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                    if (defaultLogo) defaultLogo.style.display = 'none';
+                    if (scrolledLogo) scrolledLogo.style.display = 'block';
+                } else {
+                    navbar.classList.remove('scrolled');
+                    if (defaultLogo) defaultLogo.style.display = 'block';
+                    if (scrolledLogo) scrolledLogo.style.display = 'none';
+                }
+            });
         });
     </script>
     

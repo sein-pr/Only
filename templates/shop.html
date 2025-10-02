@@ -113,7 +113,9 @@
                             <!-- Quick Actions -->
                             <div class="position-absolute top-0 end-0 p-2">
                                 <button class="btn btn-light btn-sm rounded-circle me-1" 
-                                        onclick="{% if product.id in user_wishlist %}removeFromWishlist(event, '{{ product.id }}'){% else %}addToWishlist(event, '{{ product.id }}'){% endif %}" 
+                                        data-product-id="{{ product.id }}"
+                                        data-in-wishlist="{% if product.id in user_wishlist %}true{% else %}false{% endif %}"
+                                        onclick="toggleWishlist(this)" 
                                         title="{% if product.id in user_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
                                     <i class="fas fa-heart" {% if product.id in user_wishlist %}style="color: #dc3545;"{% endif %}></i>
                                 </button>
@@ -301,6 +303,110 @@
         window.location.href = url.toString();
     }
 
-    /* wishlist + quickview functions remain unchanged */
+    function toggleWishlist(button) {
+        const productId = button.getAttribute('data-product-id');
+        const inWishlist = button.getAttribute('data-in-wishlist') === 'true';
+        
+        if (inWishlist) {
+            removeFromWishlist(event, productId);
+        } else {
+            addToWishlist(event, productId);
+        }
+    }
+    
+    function addToWishlist(event, productId) {
+        event.preventDefault();
+        
+        fetch(`/api/wishlist/add/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button state
+                const button = event.target.closest('button');
+                button.setAttribute('data-in-wishlist', 'true');
+                button.setAttribute('title', 'Remove from Wishlist');
+                button.querySelector('i').style.color = '#dc3545';
+                
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to add to wishlist', 'error');
+        });
+    }
+    
+    function removeFromWishlist(event, productId) {
+        event.preventDefault();
+        
+        fetch(`/api/wishlist/remove/${productId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button state
+                const button = event.target.closest('button');
+                button.setAttribute('data-in-wishlist', 'false');
+                button.setAttribute('title', 'Add to Wishlist');
+                button.querySelector('i').style.color = '';
+                
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to remove from wishlist', 'error');
+        });
+    }
+    
+    function quickView(productId) {
+        // Show loading state
+        const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+        const content = document.getElementById('quickViewContent');
+        content.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Loading...</div>';
+        modal.show();
+        
+        // Fetch quick view content
+        fetch(`/api/product/${productId}/quick-view`)
+        .then(response => response.text())
+        .then(html => {
+            content.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = '<div class="text-center p-4 text-danger"><i class="fas fa-exclamation-triangle fa-2x"></i><br><br>Failed to load product details</div>';
+        });
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
 </script>
 {% endblock %}
