@@ -102,9 +102,7 @@ class ProfileForm(FlaskForm):
     company_address = TextAreaField('Company Address')
     company_logo = FileField('Company Logo')
 
-class PasswordResetForm(FlaskForm):
-    current_password = PasswordField('Current Password', validators=[DataRequired()])
-    confirm_reset = StringField('Type "RESET" to confirm', validators=[DataRequired()])
+# Password reset is handled directly through request.form, no WTForm needed
 
 # Helper Functions
 def get_session_id():
@@ -335,33 +333,63 @@ def reset_password():
     import secrets
     import string
     
-    form = PasswordResetForm()
-    user = User.query.get(session['user_id'])
-    
-    if form.validate_on_submit():
-        # Verify current password
-        if not check_password_hash(user.password_hash, form.current_password.data):
+    try:
+        user = User.query.get(session['user_id'])
+        if not user:
+            flash('User not found.', 'error')
+            return redirect(url_for('profile'))
+        
+        # Get form data directly from request
+        current_password = request.form.get('current_password', '').strip()
+        confirm_reset = request.form.get('confirm_reset', '').strip()
+        
+        print(f"Debug - Current password provided: {'Yes' if current_password else 'No'}")
+        print(f"Debug - Confirm reset provided: {confirm_reset}")
+        print(f"Debug - User ID: {user.id}")
+        
+        # Validate inputs
+        if not current_password:
+            flash('Current password is required.', 'error')
+            return redirect(url_for('profile'))
+        
+        if not confirm_reset:
+            flash('Please type "RESET" to confirm password reset.', 'error')
+            return redirect(url_for('profile'))
+        
+        # Verify current password using check_password_hash
+        password_valid = check_password_hash(user.password_hash, current_password)
+        print(f"Debug - Password valid: {password_valid}")
+        
+        if not password_valid:
             flash('Current password is incorrect.', 'error')
             return redirect(url_for('profile'))
         
         # Verify confirmation
-        if form.confirm_reset.data.upper() != 'RESET':
-            flash('Please type "RESET" to confirm password reset.', 'error')
+        if confirm_reset.upper() != 'RESET':
+            flash('Please type "RESET" exactly to confirm password reset.', 'error')
             return redirect(url_for('profile'))
         
         # Generate random 12-character password
         alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
         new_password = ''.join(secrets.choice(alphabet) for i in range(12))
         
-        # Update password
+        print(f"Debug - New password generated: {new_password}")
+        
+        # Update password with proper hashing
         user.password_hash = generate_password_hash(new_password)
         db.session.commit()
         
-        flash(f'Password reset successfully! Your new password is: {new_password}', 'success')
+        print("Debug - Password updated successfully")
+        
+        flash(f'Password reset successfully! Your new password is: <strong>{new_password}</strong><br><small class="text-muted">Please save this password in a secure location.</small>', 'success')
         return redirect(url_for('profile'))
-    
-    flash('Password reset failed. Please check your inputs.', 'error')
-    return redirect(url_for('profile'))
+        
+    except Exception as e:
+        print(f"Debug - Exception occurred: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Password reset failed: {str(e)}', 'error')
+        return redirect(url_for('profile'))
 
 # Main Routes
 @app.route('/')
@@ -378,7 +406,7 @@ def shop():
     page = request.args.get('page', 1, type=int)
     category_id = request.args.get('category', type=int)
     search = request.args.get('search', '')
-    sort_by = request.args.get('sort_by', 'newest') # Default sort is 'newest'
+    sort_by = request.args.get('sort_by', 'newest')  # Default sort is 'newest'
     
     # 1. Price Filtering Parameters
     min_price_str = request.args.get('min_price')
@@ -406,25 +434,20 @@ def shop():
         # Use ilike for case-insensitive search in PostgreSQL
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
-    # Apply Price Range Filters
+    # ✅ Apply Price Range Filters
     if min_price is not None:
         query = query.filter(Product.price >= min_price)
-        
     if max_price is not None:
         query = query.filter(Product.price <= max_price)
         
-    # 2. Sorting Logic
-    if sort_by == 'price_asc':
-        # Price: Low to High
+    # ✅ Sorting Logic (now matches template values)
+    if sort_by == 'price_low':
         query = query.order_by(Product.price.asc())
-    elif sort_by == 'price_desc':
-        # Price: High to Low
+    elif sort_by == 'price_high':
         query = query.order_by(Product.price.desc())
-    elif sort_by == 'name_asc':
-        # Name A - Z
+    elif sort_by == 'name':
         query = query.order_by(Product.name.asc())
-    else: 
-        # Newest First (Default)
+    else:
         query = query.order_by(Product.created_at.desc())
 
     products = query.paginate(
@@ -445,9 +468,9 @@ def shop():
                           categories=categories, 
                           current_category=category_id, 
                           search=search,
-                          min_price=min_price_str, # Pass original strings back to template
+                          min_price=min_price_str,  # Pass original strings back to template
                           max_price=max_price_str,
-                          sort_by=sort_by, # Pass sort option back to template
+                          sort_by=sort_by,          # Pass sort option back to template
                           user_wishlist=user_wishlist)
 
 @app.route('/product/<int:product_id>')

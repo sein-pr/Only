@@ -277,13 +277,30 @@
                     
                     <div class="mb-3">
                         <label class="form-label fw-medium">Current Password</label>
-                        <input type="password" name="current_password" class="form-control" required>
+                        <div class="input-group">
+                            <input type="password" name="current_password" class="form-control" 
+                                   id="currentPasswordInput" required 
+                                   placeholder="Enter your current password">
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="togglePasswordVisibility('currentPasswordInput', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label fw-medium">Type "RESET" to confirm</label>
                         <input type="text" name="confirm_reset" class="form-control" 
-                               placeholder="Type RESET in capital letters" required>
+                               placeholder="Type RESET in capital letters" required
+                               oninput="validateResetConfirmation(this)">
+                        <div class="form-text text-danger" id="resetConfirmError" style="display: none;">
+                            Please type "RESET" exactly as shown
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This will generate a new random password and you will need to save it securely.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -304,6 +321,43 @@
         new bootstrap.Modal(document.getElementById('passwordResetModal')).show();
     }
     
+    function togglePasswordVisibility(inputId, button) {
+        const input = document.getElementById(inputId);
+        const icon = button.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    
+    function validateResetConfirmation(input) {
+        const errorDiv = document.getElementById('resetConfirmError');
+        const submitBtn = document.querySelector('#passwordResetModal button[type=submit]');
+        
+        if (input.value.toUpperCase() === 'RESET') {
+            errorDiv.style.display = 'none';
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+            submitBtn.disabled = false;
+        } else {
+            if (input.value.length > 0) {
+                errorDiv.style.display = 'block';
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+            } else {
+                errorDiv.style.display = 'none';
+                input.classList.remove('is-invalid', 'is-valid');
+            }
+            submitBtn.disabled = true;
+        }
+    }
+    
     // Form validation
     document.querySelector('form').addEventListener('submit', function(e) {
         const submitBtn = this.querySelector('button[type=submit]');
@@ -318,6 +372,54 @@
             submitBtn.disabled = false;
         }, 10000);
     });
+    
+    // Password reset form validation
+    document.querySelector('#passwordResetModal form').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type=submit]');
+        const originalText = submitBtn.innerHTML;
+        const currentPassword = this.querySelector('input[name="current_password"]').value;
+        const confirmReset = this.querySelector('input[name="confirm_reset"]').value;
+        
+        // Basic validation
+        if (!currentPassword) {
+            e.preventDefault();
+            showToast('Please enter your current password', 'error');
+            return;
+        }
+        
+        if (confirmReset.toUpperCase() !== 'RESET') {
+            e.preventDefault();
+            showToast('Please type "RESET" to confirm', 'error');
+            return;
+        }
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 10 seconds as fallback
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
     
     // Preview uploaded images
     document.getElementById('avatar').addEventListener('change', function(e) {
