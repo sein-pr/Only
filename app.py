@@ -5,11 +5,12 @@ from flask_wtf.csrf import CSRFProtect
 # from flask_wtf.csrf import exempt
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange
-from models.models import db, User, Category, Product, Order, OrderItem, CartItem, Wishlist, ProductView
+from models.models import db, User, Category, Product, Order, OrderItem, CartItem, Wishlist, ProductView, PasswordResetToken
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 from forms.profile_forms import ProfileForm
+from forms.password_reset_forms import ForgotPasswordForm, ResetPasswordForm
 import os
 import uuid
 from flask_mail import Mail, Message
@@ -183,6 +184,115 @@ def login():
     
     return render_template('auth/login.html', form=form)
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        
+        if user:
+            # Generate a secure token
+            token = str(uuid.uuid4())
+            
+            # Set expiration time (1 hour from now)
+            expires_at = datetime.utcnow() + timedelta(hours=1)
+            
+            # Create password reset token
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token,
+                expires_at=expires_at
+            )
+            
+            # Remove any existing tokens for this user
+            PasswordResetToken.query.filter_by(user_id=user.id, used=False).delete()
+            
+            db.session.add(reset_token)
+            db.session.commit()
+            
+            # Send password reset email
+            try:
+                reset_url = url_for('reset_password_with_token', token=token, _external=True)
+                
+                msg = Message(
+                    subject='Password Reset Request - Only',
+                    recipients=[user.email],
+                    sender=app.config['MAIL_DEFAULT_SENDER']
+                )
+                
+                msg.html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #ea580c, #f97316); padding: 30px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 28px;">Only</h1>
+                    </div>
+                    
+                    <div style="padding: 30px; background: #f8f9fa;">
+                        <h2 style="color: #333; margin-bottom: 20px;">Password Reset Request</h2>
+                        
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            Hello {user.first_name or user.username},
+                        </p>
+                        
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            We received a request to reset your password for your Only account. 
+                            If you made this request, click the button below to reset your password:
+                        </p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{reset_url}" 
+                               style="background: linear-gradient(135deg, #ea580c, #f97316); 
+                                      color: white; 
+                                      padding: 15px 30px; 
+                                      text-decoration: none; 
+                                      border-radius: 5px; 
+                                      font-weight: bold; 
+                                      display: inline-block;">
+                                Reset My Password
+                            </a>
+                        </div>
+                        
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            If the button doesn't work, copy and paste this link into your browser:
+                        </p>
+                        
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px; word-break: break-all;">
+                            <a href="{reset_url}" style="color: #ea580c;">{reset_url}</a>
+                        </p>
+                        
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <p style="color: #856404; margin: 0; font-size: 14px;">
+                                <strong>Security Notice:</strong> This link will expire in 1 hour for your security. 
+                                If you didn't request this password reset, please ignore this email.
+                            </p>
+                        </div>
+                        
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 0; font-size: 14px;">
+                            If you have any questions, please contact our support team.
+                        </p>
+                    </div>
+                    
+                    <div style="background: #333; padding: 20px; text-align: center;">
+                        <p style="color: #999; margin: 0; font-size: 12px;">
+                            © 2024 Only. All rights reserved.
+                        </p>
+                    </div>
+                </div>
+                """
+                
+                mail.send(msg)
+                flash('Password reset link has been sent to your email address.', 'success')
+            except Exception as e:
+                flash('Failed to send password reset email. Please try again later.', 'error')
+                print(f"Email error: {e}")
+        else:
+            # Don't reveal if email exists or not for security
+            flash('If an account with that email exists, a password reset link has been sent.', 'info')
+        
+        return redirect(url_for('forgot_password'))
+    
+    return render_template('forgot_password.html', form=form)
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
@@ -236,6 +346,49 @@ def logout():
     session.clear()
     #flash(f'Goodbye, {username}! You have been logged out.', 'info')
     return redirect(url_for('home'))
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password_with_token(token):
+    # Find the reset token
+    reset_token = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    
+    if not reset_token:
+        flash('Invalid or expired password reset link.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Check if token is expired
+    if datetime.utcnow() > reset_token.expires_at:
+        flash('Password reset link has expired. Please request a new one.', 'error')
+        # Mark token as used
+        reset_token.used = True
+        db.session.commit()
+        return redirect(url_for('forgot_password'))
+    
+    form = ResetPasswordForm()
+    
+    if form.validate_on_submit():
+        # Get the user
+        user = User.query.get(reset_token.user_id)
+        
+        if user:
+            # Update user's password
+            user.password_hash = generate_password_hash(form.password.data)
+            
+            # Mark token as used
+            reset_token.used = True
+            
+            # Remove all other unused tokens for this user
+            PasswordResetToken.query.filter_by(user_id=user.id, used=False).delete()
+            
+            db.session.commit()
+            
+            flash('Your password has been successfully reset. You can now log in with your new password.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('User not found.', 'error')
+            return redirect(url_for('forgot_password'))
+    
+    return render_template('reset_password.html', form=form, token=token)
 
 # Profile Routes
 @app.route('/profile', methods=['GET', 'POST'])

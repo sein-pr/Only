@@ -136,3 +136,15 @@ class ProductView(db.Model):
     # Relationships
     user = db.relationship('User', backref='product_views')
     product = db.relationship('Product', backref='product_views')
+
+
+class PasswordResetToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    user = db.relationship('User', backref='password_reset_tokens')
