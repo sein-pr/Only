@@ -21,10 +21,17 @@
         
         <div class="d-grid gap-2">
             <button class="btn btn-primary" onclick="addToCartQuick('{{ product.id }}')" 
-                    {% if product.stock_quantity == 0 %}disabled{% endif %}>
-                <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                    {% if product.stock_quantity == 0 or (session.user_id and product.seller_id == session.user_id) %}disabled{% endif %}>
+                {% if session.user_id and product.seller_id == session.user_id %}
+                    <i class="fas fa-user-shield me-2"></i>Your Own Product
+                {% elif product.stock_quantity == 0 %}
+                    <i class="fas fa-times me-2"></i>Out of Stock
+                {% else %}
+                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                {% endif %}
             </button>
-            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-outline-primary" 
+               onclick="trackFullDetailView('{{ product.id }}')">
                 View Full Details
             </a>
         </div>
@@ -40,6 +47,20 @@ function addToCartQuick(productId) {
                 bootstrap.Modal.getInstance(document.getElementById('quickViewModal')).hide();
             }, 1000);
         }
+    });
+}
+
+function trackFullDetailView(productId) {
+    // Track the full detail view when user clicks "View Full Details" from quick view
+    fetch(`/api/product/${productId}/track-view`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ view_type: 'full_detail' })
+    }).catch(error => {
+        console.log('View tracking failed:', error);
+        // Don't prevent navigation if tracking fails
     });
 }
 </script>

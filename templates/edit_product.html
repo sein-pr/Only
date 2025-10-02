@@ -92,27 +92,83 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Current Image -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium">Current Image</label>
-                                <div class="border rounded p-3 text-center">
-                                    {% if product.image_url %}
-                                        <img src="{{ product.image_url }}" alt="{{ product.name }}" 
-                                             class="img-fluid rounded" style="max-height: 100px;">
-                                    {% else %}
-                                        <i class="fas fa-image fa-3x text-muted"></i>
-                                        <p class="text-muted mb-0 mt-2">No image uploaded</p>
-                                    {% endif %}
+                            <!-- Main Product Image -->
+                            <div class="col-12">
+                                <label class="form-label fw-medium">Main Product Image</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 text-center">
+                                            <label class="form-label small text-muted">Current Main Image</label>
+                                            {% if product.image_url %}
+                                                <img src="{{ product.image_url }}" alt="{{ product.name }}" 
+                                                     class="img-fluid rounded mb-2" style="max-height: 120px;">
+                                            {% else %}
+                                                <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">No image uploaded</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.image.id }}" class="form-label fw-medium">
+                                            Update Main Image
+                                        </label>
+                                        {{ form.image(class="form-control") }}
+                                        <div class="form-text">Leave empty to keep current image</div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- New Image Upload -->
+                            <!-- Additional Product Images (Thumbnails) -->
                             <div class="col-12">
-                                <label for="{{ form.image.id }}" class="form-label fw-medium">
-                                    Update Product Image
-                                </label>
-                                {{ form.image(class="form-control") }}
-                                <div class="form-text">Leave empty to keep current image</div>
+                                <label class="form-label fw-medium">Additional Product Images</label>
+                                <p class="text-muted small mb-3">Upload up to 4 additional images for the product gallery</p>
+                                
+                                <!-- Current Additional Images -->
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">Current Additional Images</label>
+                                    <div class="row g-2" id="currentAdditionalImages">
+                                        {% if product.additional_images %}
+                                            {% for img_url in product.additional_images %}
+                                            <div class="col-3">
+                                                <div class="position-relative">
+                                                    <img src="{{ img_url }}" class="img-fluid rounded" 
+                                                         style="height: 80px; width: 100%; object-fit: cover;">
+                                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-1" 
+                                                            onclick="removeCurrentImage(this, '{{ img_url }}')" style="font-size: 0.7rem;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="col-12">
+                                                <div class="border rounded p-3 text-center text-muted">
+                                                    <i class="fas fa-images fa-2x mb-2"></i>
+                                                    <p class="mb-0">No additional images uploaded</p>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- New Additional Images Upload -->
+                                <div class="border-2 border-dashed rounded p-4" style="border-color: #e5e7eb;" id="additionalImagesUpload">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                        <h6 class="text-muted mb-1">Upload Additional Images</h6>
+                                        <p class="text-muted small mb-0">Select up to 4 images (JPG, PNG, WebP)</p>
+                                    </div>
+                                    
+                                    <input type="file" id="additionalImages" name="additional_images" 
+                                           class="form-control mb-3" multiple accept="image/*" 
+                                           onchange="previewAdditionalImages(this)">
+                                    
+                                    <!-- Preview Area for New Images -->
+                                    <div class="row g-2" id="newImagesPreview"></div>
+                                </div>
+                                
+                                <!-- Hidden input to track removed images -->
+                                <input type="hidden" id="removedImages" name="removed_images" value="">
                             </div>
                         </div>
                         
@@ -131,4 +187,177 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let removedImages = [];
+    
+    function previewAdditionalImages(input) {
+        const previewContainer = document.getElementById('newImagesPreview');
+        previewContainer.innerHTML = '';
+        
+        if (input.files && input.files.length > 0) {
+            // Limit to 4 images
+            const files = Array.from(input.files).slice(0, 4);
+            
+            files.forEach((file, index) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-3';
+                    
+                    col.innerHTML = `
+                        <div class="position-relative">
+                            <img src="${e.target.result}" class="img-fluid rounded" 
+                                 style="height: 80px; width: 100%; object-fit: cover;">
+                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-1" 
+                                    onclick="removeNewImage(this, ${index})" style="font-size: 0.7rem;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    previewContainer.appendChild(col);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+            
+            // Update file input if we had to limit files
+            if (input.files.length > 4) {
+                const dt = new DataTransfer();
+                files.forEach(file => dt.items.add(file));
+                input.files = dt.files;
+                
+                showToast('Only the first 4 images were selected', 'warning');
+            }
+        }
+    }
+    
+    function removeNewImage(button, index) {
+        const input = document.getElementById('additionalImages');
+        const dt = new DataTransfer();
+        
+        // Add all files except the one being removed
+        Array.from(input.files).forEach((file, i) => {
+            if (i !== index) {
+                dt.items.add(file);
+            }
+        });
+        
+        input.files = dt.files;
+        
+        // Remove the preview
+        button.closest('.col-3').remove();
+        
+        // Refresh preview to update indices
+        previewAdditionalImages(input);
+    }
+    
+    function removeCurrentImage(button, imageUrl) {
+        // Add to removed images list
+        removedImages.push(imageUrl);
+        document.getElementById('removedImages').value = JSON.stringify(removedImages);
+        
+        // Remove the preview
+        button.closest('.col-3').remove();
+        
+        // Check if no current images remain
+        const currentImagesContainer = document.getElementById('currentAdditionalImages');
+        if (currentImagesContainer.children.length === 0) {
+            currentImagesContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="border rounded p-3 text-center text-muted">
+                        <i class="fas fa-images fa-2x mb-2"></i>
+                        <p class="mb-0">No additional images uploaded</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        showToast('Image marked for removal', 'info');
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 100px; right: 20px; z-index: 9999; min-width: 250px;';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+    
+    // Drag and drop functionality for additional images
+    const additionalImagesUpload = document.getElementById('additionalImagesUpload');
+    
+    additionalImagesUpload.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#ea580c';
+        this.style.backgroundColor = '#fef3c7';
+    });
+    
+    additionalImagesUpload.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#e5e7eb';
+        this.style.backgroundColor = '';
+    });
+    
+    additionalImagesUpload.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#e5e7eb';
+        this.style.backgroundColor = '';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const input = document.getElementById('additionalImages');
+            input.files = files;
+            previewAdditionalImages(input);
+        }
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type=submit]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating Product...';
+        submitBtn.disabled = true;
+        
+        // Re-enable button after 10 seconds as fallback
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+</script>
+
+<style>
+    .position-relative .btn-danger {
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+    }
+    
+    .position-relative:hover .btn-danger {
+        opacity: 1;
+    }
+    
+    #additionalImagesUpload {
+        transition: all 0.3s ease;
+    }
+    
+    #additionalImagesUpload:hover {
+        border-color: #f97316 !important;
+    }
+</style>
 {% endblock %}

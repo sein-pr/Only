@@ -33,6 +33,7 @@ class Product(db.Model):
     price = db.Column(db.Numeric(10, 2), nullable=False)
     stock_quantity = db.Column(db.Integer, default=0)
     image_url = db.Column(db.String(200))
+    additional_images = db.Column(db.JSON)  # Store array of additional image URLs
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Foreign Keys
@@ -76,3 +77,31 @@ class CartItem(db.Model):
 
     # Relationships
     product = db.relationship('Product', backref='cart_items')
+
+
+class Wishlist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref='wishlist_items')
+    product = db.relationship('Product', backref='wishlist_items')
+
+    # Ensure unique user-product combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'product_id', name='unique_user_product_wishlist'),)
+
+
+class ProductView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for guest views
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    view_type = db.Column(db.String(20), nullable=False)  # 'quick_view' or 'full_detail'
+    ip_address = db.Column(db.String(45))  # For tracking guest views
+    user_agent = db.Column(db.String(500))  # Browser info
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref='product_views')
+    product = db.relationship('Product', backref='product_views')

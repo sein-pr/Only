@@ -26,26 +26,31 @@
                 
                 <!-- Thumbnail Gallery -->
                 <div class="row g-2">
+                    {% set all_images = [product.image_url or '/placeholder.svg?height=100&width=100'] %}
+                    {% if product.additional_images %}
+                        {% set all_images = all_images + product.additional_images %}
+                    {% endif %}
+                    
+                    {% for image_url in all_images[:4] %}
                     <div class="col-3">
-                        <img src="{{ product.image_url or '/placeholder.svg?height=100&width=100' }}" 
-                             class="img-fluid rounded thumbnail-img active" 
-                             onclick="changeMainImage(this.src)" style="cursor: pointer; height: 80px; object-fit: cover;">
+                        <img src="{{ image_url }}" 
+                             class="img-fluid rounded thumbnail-img {{ 'active' if loop.first else '' }}" 
+                             onclick="changeMainImage(this.src)" 
+                             style="cursor: pointer; height: 80px; object-fit: cover;"
+                             alt="Product image {{ loop.index }}">
                     </div>
-                    <div class="col-3">
-                        <img src="/placeholder.svg?height=100&width=100" 
-                             class="img-fluid rounded thumbnail-img" 
-                             onclick="changeMainImage(this.src)" style="cursor: pointer; height: 80px; object-fit: cover;">
-                    </div>
-                    <div class="col-3">
-                        <img src="/placeholder.svg?height=100&width=100" 
-                             class="img-fluid rounded thumbnail-img" 
-                             onclick="changeMainImage(this.src)" style="cursor: pointer; height: 80px; object-fit: cover;">
-                    </div>
-                    <div class="col-3">
-                        <img src="/placeholder.svg?height=100&width=100" 
-                             class="img-fluid rounded thumbnail-img" 
-                             onclick="changeMainImage(this.src)" style="cursor: pointer; height: 80px; object-fit: cover;">
-                    </div>
+                    {% endfor %}
+                    
+                    {% if all_images|length < 4 %}
+                        {% for i in range(all_images|length, 4) %}
+                        <div class="col-3">
+                            <div class="border rounded d-flex align-items-center justify-content-center" 
+                                 style="height: 80px; background-color: #f8f9fa;">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -106,7 +111,7 @@
                         <div class="col-md-4">
                             <label for="quantity" class="form-label fw-medium">Quantity</label>
                             <select name="quantity" id="quantity" class="form-select" 
-                                    {% if product.stock_quantity == 0 %}disabled{% endif %}>
+                                    {% if product.stock_quantity == 0 or is_own_product %}disabled{% endif %}>
                                 {% set limit = [product.stock_quantity + 1, 11] | min %}
                                     {% for i in range(1, limit) %}
                                     <option value="{{ i }}">{{ i }}</option>
@@ -115,8 +120,10 @@
                         </div>
                         <div class="col-md-8">
                             <button type="submit" class="btn btn-primary btn-lg w-100" 
-                                    {% if product.stock_quantity == 0 %}disabled{% endif %}>
-                                {% if product.stock_quantity == 0 %}
+                                    {% if product.stock_quantity == 0 or is_own_product %}disabled{% endif %}>
+                                {% if is_own_product %}
+                                    <i class="fas fa-user-shield me-2"></i>Your Own Product
+                                {% elif product.stock_quantity == 0 %}
                                     <i class="fas fa-times me-2"></i>Out of Stock
                                 {% else %}
                                     <i class="fas fa-cart-plus me-2"></i>Add to Cart
@@ -128,8 +135,10 @@
                 
                 <!-- Action Buttons -->
                 <div class="d-flex gap-2 mb-4">
-                    <button class="btn btn-outline-primary flex-fill" onclick="addToWishlist('{{ product.id }}')">
-                        <i class="fas fa-heart me-2"></i>Add to Wishlist
+                    <button class="btn btn-outline-primary flex-fill" id="wishlistBtn"
+                            onclick="{% if is_in_wishlist %}removeFromWishlist(event, '{{ product.id }}'){% else %}addToWishlist(event, '{{ product.id }}'){% endif %}">
+                        <i class="fas fa-heart me-2" {% if is_in_wishlist %}style="color: #dc3545;"{% endif %}></i>
+                        {% if is_in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}
                     </button>
                     <button class="btn btn-outline-secondary" onclick="shareProduct()">
                         <i class="fas fa-share-alt"></i>
@@ -206,7 +215,22 @@
         event.target.classList.add('active');
     }
     
-    function addToWishlist(productId) {
+    function addToWishlist(event, productId) {
+        event.preventDefault();
+        
+        const button = document.getElementById('wishlistBtn');
+        const icon = button.querySelector('i');
+        
+        // Check if user is logged in
+        {% if not session.user_id %}
+        showToast('Please log in to add items to wishlist', 'warning');
+        return;
+        {% endif %}
+        
+        // Show loading state
+        button.disabled = true;
+        icon.className = 'fas fa-spinner fa-spin me-2';
+        
         fetch(`/api/wishlist/add/${productId}`, {
             method: 'POST',
             headers: {
@@ -216,8 +240,64 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast('Added to wishlist!', 'success');
+                // Update button to remove state
+                icon.className = 'fas fa-heart me-2';
+                icon.style.color = '#dc3545';
+                button.innerHTML = '<i class="fas fa-heart me-2" style="color: #dc3545;"></i>Remove from Wishlist';
+                button.onclick = function(e) { removeFromWishlist(e, productId); };
+                showToast(data.message, 'success');
+            } else {
+                // Reset button
+                icon.className = 'fas fa-heart me-2';
+                showToast(data.message, 'error');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            icon.className = 'fas fa-heart me-2';
+            showToast('Failed to add to wishlist', 'error');
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+    }
+    
+    function removeFromWishlist(event, productId) {
+        event.preventDefault();
+        
+        const button = document.getElementById('wishlistBtn');
+        const icon = button.querySelector('i');
+        
+        // Show loading state
+        button.disabled = true;
+        icon.className = 'fas fa-spinner fa-spin me-2';
+        
+        fetch(`/api/wishlist/remove/${productId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button to add state
+                icon.className = 'fas fa-heart me-2';
+                icon.style.color = '';
+                button.innerHTML = '<i class="fas fa-heart me-2"></i>Add to Wishlist';
+                button.onclick = function(e) { addToWishlist(e, productId); };
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to remove from wishlist', 'error');
+        })
+        .finally(() => {
+            button.disabled = false;
+            icon.className = 'fas fa-heart me-2';
         });
     }
     

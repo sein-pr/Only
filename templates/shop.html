@@ -116,8 +116,9 @@
                             <!-- Quick Actions -->
                             <div class="position-absolute top-0 end-0 p-2">
                                 <button class="btn btn-light btn-sm rounded-circle me-1" 
-                                        onclick="addToWishlist(event, '{{ product.id }}')" title="Add to Wishlist">
-                                    <i class="fas fa-heart"></i>
+                                        onclick="{% if product.id in user_wishlist %}removeFromWishlist(event, '{{ product.id }}'){% else %}addToWishlist(event, '{{ product.id }}'){% endif %}" 
+                                        title="{% if product.id in user_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+                                    <i class="fas fa-heart" {% if product.id in user_wishlist %}style="color: #dc3545;"{% endif %}></i>
                                 </button>
                                 <button class="btn btn-light btn-sm rounded-circle" 
                                         onclick="quickView('{{ product.id }}')" title="Quick View">
@@ -156,8 +157,10 @@
                                 <form method="POST" action="{{ url_for('add_to_cart', product_id=product.id) }}" class="d-inline">
                                     <input type="hidden" name="quantity" value="1">
                                     <button type="submit" class="btn btn-primary btn-sm" 
-                                            {% if product.stock_quantity == 0 %}disabled{% endif %}>
-                                        {% if product.stock_quantity == 0 %}
+                                            {% if product.stock_quantity == 0 or (session.user_id and product.seller_id == session.user_id) %}disabled{% endif %}>
+                                        {% if session.user_id and product.seller_id == session.user_id %}
+                                            Your Product
+                                        {% elif product.stock_quantity == 0 %}
                                             Out of Stock
                                         {% else %}
                                             <i class="fas fa-cart-plus me-1"></i>Add to Cart
@@ -297,7 +300,23 @@
     }
     
     function addToWishlist(event, productId) {
-        // Implement wishlist functionality
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const button = event.target.closest('button');
+        const icon = button.querySelector('i');
+        const originalColor = icon.style.color;
+        
+        // Check if user is logged in
+        {% if not session.user_id %}
+        showToast('Please log in to add items to wishlist', 'warning');
+        return;
+        {% endif %}
+        
+        // Show loading state
+        button.disabled = true;
+        icon.className = 'fas fa-spinner fa-spin';
+        
         fetch(`/api/wishlist/add/${productId}`, {
             method: 'POST',
             headers: {
@@ -307,11 +326,67 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update heart icon
-                event.target.style.color = '#dc3545';
-                // Show toast notification
-                showToast('Added to wishlist!', 'success');
+                // Update heart icon to filled red
+                icon.className = 'fas fa-heart';
+                icon.style.color = '#dc3545';
+                button.title = 'Remove from Wishlist';
+                button.onclick = function(e) { removeFromWishlist(e, productId); };
+                showToast(data.message, 'success');
+            } else {
+                // Reset icon
+                icon.className = 'fas fa-heart';
+                icon.style.color = originalColor;
+                showToast(data.message, 'error');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            icon.className = 'fas fa-heart';
+            icon.style.color = originalColor;
+            showToast('Failed to add to wishlist', 'error');
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+    }
+    
+    function removeFromWishlist(event, productId) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const button = event.target.closest('button');
+        const icon = button.querySelector('i');
+        
+        // Show loading state
+        button.disabled = true;
+        icon.className = 'fas fa-spinner fa-spin';
+        
+        fetch(`/api/wishlist/remove/${productId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update heart icon to outline
+                icon.className = 'fas fa-heart';
+                icon.style.color = '';
+                button.title = 'Add to Wishlist';
+                button.onclick = function(e) { addToWishlist(e, productId); };
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to remove from wishlist', 'error');
+        })
+        .finally(() => {
+            button.disabled = false;
+            icon.className = 'fas fa-heart';
         });
     }
     

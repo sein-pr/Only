@@ -28,8 +28,8 @@
                         <small class="text-muted">Placed on {{ order.created_at.strftime('%B %d, %Y') }}</small>
                     </div>
                     <div class="col-md-6 text-end">
-                        <span class="badge bg-{% if order.status == 'confirmed' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'shipped' %}info{% else %}secondary{% endif %} me-2">
-                            {{ order.status.title() }}
+                        <span class="badge bg-{% if order.status == 'confirmed' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'processing' %}info{% elif order.status == 'shipped' %}primary{% elif order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'refund_approved' %}secondary{% else %}secondary{% endif %} me-2">
+                            {{ order.status.replace('_', ' ').title() }}
                         </span>
                         <span class="fw-bold" style="color: #ea580c;">${{ "%.2f"|format(order.total_amount) }}</span>
                     </div>
@@ -62,10 +62,14 @@
                     <a href="{{ url_for('order_confirmation', order_id=order.id) }}" class="btn btn-outline-info btn-sm">
                         <i class="fas fa-eye me-1"></i>View Details
                     </a>
-                    {% if order.status != 'cancelled' %}
+                    {% if order.status == 'pending' or order.status == 'confirmed' %}
                     <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('{{ order.id }}')">
                         <i class="fas fa-times me-1"></i>Cancel Order
                     </button>
+                    {% elif order.status == 'refund_approved' %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check me-1"></i>Refund Approved
+                    </span>
                     {% endif %}
                 </div>
             </div>
@@ -140,8 +144,8 @@
                                             <i class="fas ${stage.completed ? 'fa-check-circle' : 'fa-circle'}"></i>
                                         </div>
                                         <div class="stage-content">
-                                            <h6>${stage.status}</h6>
-                                            ${stage.date ? `<small class="text-muted">${new Date(stage.date).toLocaleDateString()}</small>` : ''}
+                                            <h6 style="margin-left:1rem;">${stage.status}</h6>
+                                            ${stage.date ? `<small class="text-muted" style="margin-left:1rem;">${new Date(stage.date).toLocaleDateString()}</small>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}

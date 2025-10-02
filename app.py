@@ -5,7 +5,7 @@ from flask_wtf.csrf import CSRFProtect
 # from flask_wtf.csrf import exempt
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange
-from models.models import db, User, Category, Product, Order, OrderItem, CartItem
+from models.models import db, User, Category, Product, Order, OrderItem, CartItem, Wishlist, ProductView
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -82,6 +82,7 @@ class ProductForm(FlaskForm):
     stock_quantity = IntegerField('Stock Quantity', validators=[DataRequired(), NumberRange(min=0)])
     category_id = SelectField('Category', coerce=int, validators=[DataRequired()])
     image = FileField('Product Image')
+    additional_images = FileField('Additional Images')
 
 # Helper Functions
 def get_session_id():
@@ -291,6 +292,14 @@ def shop():
         page=page, per_page=12, error_out=False
     )
     
+    # Get user's wishlist items if logged in
+    user_wishlist = []
+    if 'user_id' in session:
+        user_wishlist = [
+            item.product_id for item in 
+            Wishlist.query.filter_by(user_id=session['user_id']).all()
+        ]
+    
     categories = Category.query.all()
     return render_template('shop.html', 
                           products=products, 
@@ -299,7 +308,8 @@ def shop():
                           search=search,
                           min_price=min_price_str, # Pass original strings back to template
                           max_price=max_price_str,
-                          sort_by=sort_by) # Pass sort option back to template
+                          sort_by=sort_by, # Pass sort option back to template
+                          user_wishlist=user_wishlist)
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
@@ -308,7 +318,36 @@ def product_detail(product_id):
         Product.category_id == product.category_id,
         Product.id != product.id
     ).limit(4).all()
-    return render_template('product_detail.html', product=product, related_products=related_products)
+    
+    # Track the full detail view (only for buyers, not sellers of their own products)
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        # Only track if user is a buyer or if seller is viewing someone else's product
+        if user.role == 'buyer' or (user.role == 'seller' and product.seller_id != user.id):
+            track_product_view(product_id, 'full_detail')
+    else:
+        # Track for guest users
+        track_product_view(product_id, 'full_detail')
+    
+    # Check if product is in user's wishlist
+    is_in_wishlist = False
+    if 'user_id' in session:
+        wishlist_item = Wishlist.query.filter_by(
+            user_id=session['user_id'],
+            product_id=product_id
+        ).first()
+        is_in_wishlist = wishlist_item is not None
+    
+    # Check if current user is the seller (to prevent buying own products)
+    is_own_product = False
+    if 'user_id' in session:
+        is_own_product = product.seller_id == session['user_id']
+    
+    return render_template('product_detail.html', 
+                          product=product, 
+                          related_products=related_products,
+                          is_in_wishlist=is_in_wishlist,
+                          is_own_product=is_own_product)
 
 # Cart Routes
 
@@ -343,6 +382,12 @@ def cart():
 # @csrf.exempt
 def add_to_cart(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Prevent sellers from buying their own products
+    if 'user_id' in session and product.seller_id == session['user_id']:
+        flash('You cannot buy your own products!', 'error')
+        return redirect(request.referrer or url_for('shop'))
+    
     quantity = int(request.form.get('quantity', 1))
     session_id = get_session_id()
     
@@ -426,6 +471,14 @@ def api_cart_count():
 def api_add_to_cart(product_id):
     try:
         product = Product.query.get_or_404(product_id)
+        
+        # Prevent sellers from buying their own products
+        if 'user_id' in session and product.seller_id == session['user_id']:
+            return jsonify({
+                'success': False,
+                'message': 'You cannot buy your own products!'
+            }), 400
+        
         quantity = int(request.json.get('quantity', 1))
         session_id = get_session_id()
         
@@ -521,22 +574,144 @@ def api_remove_cart_item(item_id):
         }), 500
 
 @app.route('/api/wishlist/add/<int:product_id>', methods=['POST'])
+@login_required
 def add_to_wishlist(product_id):
-    # For now, just return success - implement full wishlist later
-    return jsonify({
-        'success': True,
-        'message': 'Added to wishlist!'
-    })
+    try:
+        user_id = session['user_id']
+        product = Product.query.get_or_404(product_id)
+        
+        # Check if already in wishlist
+        existing_wishlist = Wishlist.query.filter_by(
+            user_id=user_id,
+            product_id=product_id
+        ).first()
+        
+        if existing_wishlist:
+            return jsonify({
+                'success': False,
+                'message': 'Product already in wishlist!'
+            }), 400
+        
+        # Add to wishlist
+        wishlist_item = Wishlist(
+            user_id=user_id,
+            product_id=product_id
+        )
+        db.session.add(wishlist_item)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Added to wishlist!'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to add to wishlist'
+        }), 500
+
+@app.route('/api/wishlist/remove/<int:product_id>', methods=['DELETE'])
+@login_required
+def remove_from_wishlist(product_id):
+    try:
+        user_id = session['user_id']
+        
+        wishlist_item = Wishlist.query.filter_by(
+            user_id=user_id,
+            product_id=product_id
+        ).first_or_404()
+        
+        db.session.delete(wishlist_item)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Removed from wishlist!'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to remove from wishlist'
+        }), 500
 
 @app.route('/api/product/<int:product_id>/quick-view')
 def product_quick_view(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Track the quick view (only for buyers, not sellers of their own products)
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        # Only track if user is a buyer or if seller is viewing someone else's product
+        if user.role == 'buyer' or (user.role == 'seller' and product.seller_id != user.id):
+            track_product_view(product_id, 'quick_view')
+    else:
+        # Track for guest users
+        track_product_view(product_id, 'quick_view')
+    
     return render_template('partials/quick_view.html', product=product)
+
+@app.route('/api/product/<int:product_id>/track-view', methods=['POST'])
+def track_view_api(product_id):
+    """API endpoint to track product views"""
+    try:
+        data = request.get_json()
+        view_type = data.get('view_type', 'quick_view')
+        
+        # Validate view_type
+        if view_type not in ['quick_view', 'full_detail']:
+            return jsonify({'success': False, 'message': 'Invalid view type'}), 400
+        
+        product = Product.query.get_or_404(product_id)
+        
+        # Only track for buyers or sellers viewing other's products
+        if 'user_id' in session:
+            user = User.query.get(session['user_id'])
+            if user.role == 'buyer' or (user.role == 'seller' and product.seller_id != user.id):
+                track_product_view(product_id, view_type)
+                return jsonify({'success': True})
+            else:
+                return jsonify({'success': False, 'message': 'Sellers cannot view their own products for analytics'})
+        else:
+            # Track for guest users
+            track_product_view(product_id, view_type)
+            return jsonify({'success': True})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def track_product_view(product_id, view_type):
+    """Helper function to track product views"""
+    try:
+        user_id = session.get('user_id')
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+        user_agent = request.headers.get('User-Agent', '')
+        
+        # Create view record
+        view = ProductView(
+            user_id=user_id,
+            product_id=product_id,
+            view_type=view_type,
+            ip_address=ip_address,
+            user_agent=user_agent[:500]  # Truncate to fit column
+        )
+        
+        db.session.add(view)
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Error tracking view: {e}")
+        # Don't fail the main request if view tracking fails
+        pass
 
 # Seller Routes
 @app.route('/seller/dashboard')
 @seller_required
 def seller_dashboard():
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, distinct
+    
     user_id = session['user_id']
 
     # Get seller statistics
@@ -558,6 +733,85 @@ def seller_dashboard():
         .scalar()
     ) or 0
 
+    # Calculate daily order performance (today vs yesterday)
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    
+    # Orders today
+    orders_today = (
+        db.session.query(Order)
+        .join(OrderItem)
+        .join(Product)
+        .filter(
+            Product.seller_id == user_id,
+            func.date(Order.created_at) == today
+        )
+        .count()
+    )
+    
+    # Orders yesterday
+    orders_yesterday = (
+        db.session.query(Order)
+        .join(OrderItem)
+        .join(Product)
+        .filter(
+            Product.seller_id == user_id,
+            func.date(Order.created_at) == yesterday
+        )
+        .count()
+    )
+    
+    # Calculate percentage change
+    if orders_yesterday > 0:
+        daily_change_percent = ((orders_today - orders_yesterday) / orders_yesterday) * 100
+    else:
+        daily_change_percent = 100 if orders_today > 0 else 0
+    
+    daily_change_direction = "increase" if daily_change_percent >= 0 else "decrease"
+    daily_change_percent = abs(daily_change_percent)
+
+    # Count new customers (unique customers who bought seller's products)
+    new_customers_count = (
+        db.session.query(func.count(distinct(Order.user_id)))
+        .join(OrderItem)
+        .join(Product)
+        .filter(Product.seller_id == user_id)
+        .scalar()
+    ) or 0
+
+    # Calculate average rating based on wishlist counts
+    # Get all seller's products with their wishlist counts
+    products_wishlist_data = (
+        db.session.query(
+            Product.id,
+            func.count(Wishlist.id).label('wishlist_count')
+        )
+        .outerjoin(Wishlist, Product.id == Wishlist.product_id)
+        .filter(Product.seller_id == user_id)
+        .group_by(Product.id)
+        .all()
+    )
+    
+    if products_wishlist_data:
+        # Calculate average wishlist count as a rating (scale 1-5)
+        total_wishlist_count = sum(item.wishlist_count for item in products_wishlist_data)
+        product_count = len(products_wishlist_data)
+        avg_wishlist_per_product = total_wishlist_count / product_count if product_count > 0 else 0
+        
+        # Convert to 1-5 scale (assuming 10+ wishlists = 5 stars)
+        average_rating = min(5.0, max(1.0, (avg_wishlist_per_product / 2) + 1))
+        average_rating = f"{average_rating:.1f}"
+    else:
+        average_rating = "0.0"
+
+    # Calculate total views for seller's products
+    total_views = (
+        db.session.query(func.count(ProductView.id))
+        .join(Product, ProductView.product_id == Product.id)
+        .filter(Product.seller_id == user_id)
+        .scalar()
+    ) or 0
+
     # Recent products
     recent_products = (
         Product.query.filter_by(seller_id=user_id)
@@ -566,14 +820,14 @@ def seller_dashboard():
         .all()
     )
 
-    # Recent orders for this seller
+    # Recent orders for this seller (with proper filtering)
     recent_orders = (
         db.session.query(Order)
         .join(OrderItem)
         .join(Product)
         .filter(Product.seller_id == user_id)
         .order_by(Order.created_at.desc())
-        .limit(5)
+        .limit(10)
         .all()
     )
 
@@ -584,6 +838,12 @@ def seller_dashboard():
         total_revenue=total_revenue,
         recent_products=recent_products,
         recent_orders=recent_orders,
+        average_rating=average_rating,
+        daily_change_percent=daily_change_percent,
+        daily_change_direction=daily_change_direction,
+        new_customers_count=new_customers_count,
+        orders_today=orders_today,
+        total_views=total_views
     )
 
 @app.route('/seller/duplicate-product/<int:product_id>', methods=['POST'])
@@ -606,6 +866,7 @@ def duplicate_product(product_id):
         category_id=original_product.category_id,
         seller_id=original_product.seller_id, # Inherits the seller ID
         image_url=original_product.image_url,
+        additional_images=original_product.additional_images.copy() if original_product.additional_images else None,
         created_at=datetime.utcnow() # Set a new creation date
     )
     
@@ -659,7 +920,7 @@ def add_product():
     form.category_id.choices = [(c.id, c.name) for c in Category.query.all()]
     
     if form.validate_on_submit():
-        # Handle file upload
+        # Handle main image upload
         image_url = None
         if form.image.data:
             filename = secure_filename(form.image.data.filename)
@@ -668,6 +929,17 @@ def add_product():
                 form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 image_url = f"/static/uploads/{filename}"
         
+        # Handle additional images upload
+        additional_images = []
+        additional_images_files = request.files.getlist('additional_images')
+        for img_file in additional_images_files:
+            if img_file and img_file.filename:
+                filename = secure_filename(img_file.filename)
+                if filename:
+                    filename = f"{uuid.uuid4()}_{filename}"
+                    img_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    additional_images.append(f"/static/uploads/{filename}")
+        
         product = Product(
             name=form.name.data,
             description=form.description.data,
@@ -675,7 +947,8 @@ def add_product():
             stock_quantity=form.stock_quantity.data,
             category_id=form.category_id.data,
             seller_id=session['user_id'],
-            image_url=image_url
+            image_url=image_url,
+            additional_images=additional_images if additional_images else None
         )
         
         db.session.add(product)
@@ -703,13 +976,39 @@ def edit_product(product_id):
         product.stock_quantity = form.stock_quantity.data
         product.category_id = form.category_id.data
         
-        # Handle file upload (only if new image is provided)
+        # Handle main image upload (only if new image is provided)
         if form.image.data:
             filename = secure_filename(form.image.data.filename)
             if filename:
                 filename = f"{uuid.uuid4()}_{filename}"
                 form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 product.image_url = f"/static/uploads/{filename}"
+        
+        # Handle additional images
+        current_additional_images = product.additional_images or []
+        
+        # Handle removed images
+        removed_images_str = request.form.get('removed_images', '[]')
+        try:
+            import json
+            removed_images = json.loads(removed_images_str) if removed_images_str != '[]' else []
+            # Remove deleted images from current list
+            current_additional_images = [img for img in current_additional_images if img not in removed_images]
+        except:
+            pass  # If parsing fails, keep current images
+        
+        # Handle new additional images upload
+        additional_images_files = request.files.getlist('additional_images')
+        for img_file in additional_images_files:
+            if img_file and img_file.filename:
+                filename = secure_filename(img_file.filename)
+                if filename:
+                    filename = f"{uuid.uuid4()}_{filename}"
+                    img_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    current_additional_images.append(f"/static/uploads/{filename}")
+        
+        # Limit to 4 additional images
+        product.additional_images = current_additional_images[:4] if current_additional_images else None
         
         db.session.commit()
         
@@ -912,7 +1211,7 @@ def cancel_order(order_id):
         if order.status not in ['pending', 'confirmed']:
             return jsonify({
                 'success': False,
-                'message': 'Order cannot be cancelled at this stage'
+                'message': 'Order cannot be cancelled at this stage. Orders can only be cancelled when pending or confirmed.'
             }), 400
         
         # Restore stock quantities
@@ -940,14 +1239,25 @@ def track_order(order_id):
     """Get order tracking information"""
     order = Order.query.filter_by(id=order_id, user_id=session['user_id']).first_or_404()
     
-    # Simulate tracking stages
-    tracking_stages = [
-        {'status': 'Order Placed', 'date': order.created_at, 'completed': True},
-        {'status': 'Payment Confirmed', 'date': order.created_at, 'completed': True},
-        {'status': 'Processing', 'date': None, 'completed': order.status in ['shipped', 'delivered']},
-        {'status': 'Shipped', 'date': None, 'completed': order.status in ['shipped', 'delivered']},
-        {'status': 'Delivered', 'date': None, 'completed': order.status == 'delivered'}
-    ]
+    # Create tracking stages based on actual order status
+    tracking_stages = []
+    
+    # Always show these initial stages
+    tracking_stages.append({'status': 'Order Placed', 'date': order.created_at, 'completed': True})
+    tracking_stages.append({'status': 'Payment Confirmed', 'date': order.created_at, 'completed': True})
+    
+    # Add stages based on current status
+    if order.status == 'cancelled':
+        tracking_stages.append({'status': 'Order Cancelled', 'date': None, 'completed': True})
+    elif order.status == 'refund_approved':
+        tracking_stages.append({'status': 'Order Cancelled', 'date': None, 'completed': True})
+        tracking_stages.append({'status': 'Refund Approved', 'date': None, 'completed': True})
+    else:
+        # Normal order flow
+        tracking_stages.append({'status': 'Order Confirmed', 'date': None, 'completed': order.status in ['confirmed', 'processing', 'shipped', 'delivered']})
+        tracking_stages.append({'status': 'Processing', 'date': None, 'completed': order.status in ['processing', 'shipped', 'delivered']})
+        tracking_stages.append({'status': 'Shipped', 'date': None, 'completed': order.status in ['shipped', 'delivered']})
+        tracking_stages.append({'status': 'Delivered', 'date': None, 'completed': order.status == 'delivered'})
     
     return jsonify({
         'order_number': order.order_number,
@@ -1000,6 +1310,231 @@ def reorder(order_id):
         return jsonify({
             'success': False,
             'message': 'Failed to reorder items'
+        }), 500
+
+# Sales Analytics Routes
+@app.route('/api/seller/sales-trend')
+@seller_required
+def seller_sales_trend():
+    """Get sales trend data for the last 30 days"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, distinct
+    
+    user_id = session['user_id']
+    
+    # Get sales data for the last 30 days
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=29)  # 30 days total including today
+    
+    # Query daily sales (revenue) for seller's products
+    daily_sales = (
+        db.session.query(
+            func.date(Order.created_at).label('date'),
+            func.sum(OrderItem.price * OrderItem.quantity).label('revenue'),
+            func.count(distinct(Order.id)).label('orders')
+        )
+        .join(OrderItem, Order.id == OrderItem.order_id)
+        .join(Product, OrderItem.product_id == Product.id)
+        .filter(
+            Product.seller_id == user_id,
+            func.date(Order.created_at) >= start_date,
+            func.date(Order.created_at) <= end_date,
+            Order.status.in_(['confirmed', 'processing', 'shipped', 'delivered'])  # Only successful orders
+        )
+        .group_by(func.date(Order.created_at))
+        .order_by(func.date(Order.created_at))
+        .all()
+    )
+    
+    # Create a complete date range with zero values for days without sales
+    sales_dict = {sale.date: {'revenue': float(sale.revenue or 0), 'orders': sale.orders} for sale in daily_sales}
+    
+    # Generate all dates in range
+    current_date = start_date
+    dates = []
+    revenues = []
+    orders = []
+    
+    while current_date <= end_date:
+        dates.append(current_date.strftime('%Y-%m-%d'))
+        if current_date in sales_dict:
+            revenues.append(sales_dict[current_date]['revenue'])
+            orders.append(sales_dict[current_date]['orders'])
+        else:
+            revenues.append(0)
+            orders.append(0)
+        current_date += timedelta(days=1)
+    
+    # Calculate some summary statistics
+    total_revenue = sum(revenues)
+    total_orders = sum(orders)
+    avg_daily_revenue = total_revenue / 30 if total_revenue > 0 else 0
+    
+    # Calculate trend (comparing last 15 days vs previous 15 days)
+    last_15_days_revenue = sum(revenues[-15:])
+    prev_15_days_revenue = sum(revenues[:15])
+    
+    if prev_15_days_revenue > 0:
+        trend_percentage = ((last_15_days_revenue - prev_15_days_revenue) / prev_15_days_revenue) * 100
+    else:
+        trend_percentage = 100 if last_15_days_revenue > 0 else 0
+    
+    return jsonify({
+        'dates': dates,
+        'revenues': revenues,
+        'orders': orders,
+        'summary': {
+            'total_revenue': total_revenue,
+            'total_orders': total_orders,
+            'avg_daily_revenue': avg_daily_revenue,
+            'trend_percentage': round(trend_percentage, 1),
+            'trend_direction': 'up' if trend_percentage >= 0 else 'down'
+        }
+    })
+
+# Seller Order Management Routes
+@app.route('/api/seller/orders')
+@seller_required
+def seller_orders():
+    """Get all orders for seller's products"""
+    user_id = session['user_id']
+    
+    # Get orders that contain seller's products
+    orders = (
+        db.session.query(Order)
+        .join(OrderItem)
+        .join(Product)
+        .filter(Product.seller_id == user_id)
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+    
+    orders_data = []
+    for order in orders:
+        # Get only the items from this seller
+        seller_items = [
+            item for item in order.order_items 
+            if item.product.seller_id == user_id
+        ]
+        
+        if seller_items:  # Only include orders with seller's products
+            orders_data.append({
+                'id': order.id,
+                'order_number': order.order_number,
+                'customer_name': order.user.username,
+                'customer_email': order.user.email,
+                'status': order.status,
+                'created_at': order.created_at.strftime('%Y-%m-%d %H:%M'),
+                'total_amount': float(sum(item.price * item.quantity for item in seller_items)),
+                'items': [{
+                    'id': item.id,
+                    'product_name': item.product.name,
+                    'product_image': item.product.image_url,
+                    'quantity': item.quantity,
+                    'price': float(item.price)
+                } for item in seller_items]
+            })
+    
+    return jsonify({'orders': orders_data})
+
+@app.route('/api/seller/order/<int:order_id>/update-status', methods=['POST'])
+@seller_required
+def update_order_status(order_id):
+    """Update order status by seller"""
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        # Validate status
+        valid_statuses = ['confirmed', 'processing', 'shipped', 'delivered']
+        if new_status not in valid_statuses:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid status'
+            }), 400
+        
+        # Get order and verify seller has products in it
+        order = Order.query.get_or_404(order_id)
+        user_id = session['user_id']
+        
+        # Check if seller has products in this order
+        seller_has_products = any(
+            item.product.seller_id == user_id 
+            for item in order.order_items
+        )
+        
+        if not seller_has_products:
+            return jsonify({
+                'success': False,
+                'message': 'Access denied'
+            }), 403
+        
+        # Don't allow status updates on cancelled orders
+        if order.status == 'cancelled':
+            return jsonify({
+                'success': False,
+                'message': 'Cannot update cancelled orders'
+            }), 400
+        
+        # Update order status
+        order.status = new_status
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Order status updated to {new_status}'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update order status'
+        }), 500
+
+@app.route('/api/seller/order/<int:order_id>/approve-refund', methods=['POST'])
+@seller_required
+def approve_refund(order_id):
+    """Approve refund for cancelled order"""
+    try:
+        # Get order and verify seller has products in it
+        order = Order.query.get_or_404(order_id)
+        user_id = session['user_id']
+        
+        # Check if seller has products in this order
+        seller_has_products = any(
+            item.product.seller_id == user_id 
+            for item in order.order_items
+        )
+        
+        if not seller_has_products:
+            return jsonify({
+                'success': False,
+                'message': 'Access denied'
+            }), 403
+        
+        # Only allow refund approval for cancelled orders
+        if order.status != 'cancelled':
+            return jsonify({
+                'success': False,
+                'message': 'Order is not cancelled'
+            }), 400
+        
+        # Update order status to indicate refund approved
+        order.status = 'refund_approved'
+        db.session.commit()
+        
+        # Here you would typically integrate with payment processor to issue refund
+        # For now, we'll just update the status
+        
+        return jsonify({
+            'success': True,
+            'message': 'Refund approved successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to approve refund'
         }), 500
 
 # Email Notification Function
@@ -1099,6 +1634,8 @@ if __name__ == '__main__':
             for category in categories:
                 db.session.add(category)
             db.session.commit()
-    
+            print("Default categories created!")
         
+        print("Database tables created successfully!")
+    
 app.run(port="5002",debug=True)

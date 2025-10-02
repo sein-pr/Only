@@ -95,13 +95,15 @@
                     <div class="seller-stats p-3 rounded mb-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="fw-bold mb-1">This Month</h6>
-                                <small class="text-muted">Sales Performance</small>
+                                <h6 class="fw-bold mb-1">Today</h6>
+                                <small class="text-muted">Daily Performance</small>
                             </div>
                             <div class="text-end">
-                                <div class="h5 mb-0 fw-bold" style="color: #ea580c;">+15%</div>
-                                <small class="text-success">
-                                    <i class="fas fa-arrow-up me-1"></i>vs last month
+                                <div class="h5 mb-0 fw-bold" style="color: #ea580c;">
+                                    {% if daily_change_direction == 'increase' %}+{% endif %}{{ "%.1f"|format(daily_change_percent) }}%
+                                </div>
+                                <small class="{% if daily_change_direction == 'increase' %}text-success{% else %}text-danger{% endif %}">
+                                    <i class="fas fa-arrow-{% if daily_change_direction == 'increase' %}up{% else %}down{% endif %} me-1"></i>vs yesterday
                                 </small>
                             </div>
                         </div>
@@ -109,12 +111,12 @@
                     
                     <div class="row g-3 text-center">
                         <div class="col-4">
-                            <div class="fw-bold">24</div>
-                            <small class="text-muted">Products Sold</small>
+                            <div class="fw-bold">{{ orders_today }}</div>
+                            <small class="text-muted">Orders Today</small>
                         </div>
                         <div class="col-4">
-                            <div class="fw-bold">18</div>
-                            <small class="text-muted">New Customers</small>
+                            <div class="fw-bold">{{ new_customers_count }}</div>
+                            <small class="text-muted">Total Customers</small>
                         </div>
                         <div class="col-4">
                             <div class="fw-bold">{{ average_rating }}</div>
@@ -185,17 +187,26 @@
 
 <!-- Orders Modal -->
 <div class="modal fade" id="ordersModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Recent Orders</h5>
+                <h5 class="modal-title">Order Management</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="text-center py-4">
+                <div id="ordersLoading" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">Loading orders...</p>
+                </div>
+                
+                <div id="ordersContent" style="display: none;">
+                    <div id="ordersList"></div>
+                    
+                    <div id="noOrders" class="text-center py-4" style="display: none;">
                     <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">No recent orders</h6>
+                        <h6 class="text-muted">No orders yet</h6>
                     <p class="text-muted small">Orders will appear here when customers purchase your products</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -223,7 +234,7 @@
                     <div class="col-md-6">
                         <div class="card border-0 bg-light">
                             <div class="card-body text-center">
-                                <h4 class="fw-bold" style="color: #ea580c;">156</h4>
+                                <h4 class="fw-bold" style="color: #ea580c;">{{ total_views }}</h4>
                                 <p class="text-muted mb-0">Total Views</p>
                             </div>
                         </div>
@@ -231,10 +242,52 @@
                 </div>
                 
                 <div class="mt-4">
-                    <h6 class="fw-bold mb-3">Sales Trend</h6>
-                    <div class="bg-light p-4 rounded text-center">
-                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Analytics dashboard coming soon!</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Sales Trend (Last 30 Days)</h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="toggleChartType('revenue')" id="revenueBtn">Revenue</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="toggleChartType('orders')" id="ordersBtn">Orders</button>
+                        </div>
+                    </div>
+                    
+                    <div class="position-relative" style="height: 300px;">
+                        <canvas id="salesTrendChart"></canvas>
+                        <div id="chartLoading" class="position-absolute top-50 start-50 translate-middle">
+                            <div class="d-flex flex-column align-items-center">
+                                <div class="spinner-border text-primary mb-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <small class="text-muted">Loading sales data...</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Summary -->
+                    <div class="row g-3 mt-3" id="chartSummary" style="display: none;">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h6 mb-1 fw-bold text-primary" id="summaryRevenue">$0</div>
+                                <small class="text-muted">Total Revenue</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h6 mb-1 fw-bold text-info" id="summaryOrders">0</div>
+                                <small class="text-muted">Total Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h6 mb-1 fw-bold text-success" id="summaryAvg">$0</div>
+                                <small class="text-muted">Daily Average</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h6 mb-1 fw-bold" id="summaryTrend">0%</div>
+                                <small class="text-muted">15-Day Trend</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -246,7 +299,197 @@
 {% block scripts %}
 <script>
     function showOrdersModal() {
-        new bootstrap.Modal(document.getElementById('ordersModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('ordersModal'));
+        modal.show();
+        loadSellerOrders();
+    }
+    
+    function loadSellerOrders() {
+        document.getElementById('ordersLoading').style.display = 'block';
+        document.getElementById('ordersContent').style.display = 'none';
+        
+        fetch('/api/seller/orders')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ordersLoading').style.display = 'none';
+                document.getElementById('ordersContent').style.display = 'block';
+                
+                if (data.orders && data.orders.length > 0) {
+                    displayOrders(data.orders);
+                    document.getElementById('noOrders').style.display = 'none';
+                } else {
+                    document.getElementById('ordersList').innerHTML = '';
+                    document.getElementById('noOrders').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                document.getElementById('ordersLoading').style.display = 'none';
+                document.getElementById('ordersContent').style.display = 'block';
+                document.getElementById('ordersList').innerHTML = '<div class="alert alert-danger">Failed to load orders. Please try again.</div>';
+            });
+    }
+    
+    function displayOrders(orders) {
+        const ordersList = document.getElementById('ordersList');
+        ordersList.innerHTML = '';
+        
+        orders.forEach(order => {
+            const orderCard = createOrderCard(order);
+            ordersList.appendChild(orderCard);
+        });
+    }
+    
+    function createOrderCard(order) {
+        const card = document.createElement('div');
+        card.className = 'card border-0 shadow-sm mb-3';
+        
+        const statusBadgeClass = getStatusBadgeClass(order.status);
+        const canUpdate = order.status !== 'cancelled' && order.status !== 'refund_approved';
+        const isCancelled = order.status === 'cancelled';
+        
+        card.innerHTML = `
+            <div class="card-header bg-white border-0">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h6 class="mb-1 fw-bold">Order ${order.order_number}</h6>
+                        <small class="text-muted">Customer: ${order.customer_name} | ${order.created_at}</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge ${statusBadgeClass} me-2">${order.status.replace('_', ' ').toUpperCase()}</span>
+                        <span class="fw-bold" style="color: #ea580c;">$${order.total_amount.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    ${order.items.map(item => `
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="${item.product_image || '/placeholder.svg?height=50&width=50'}" 
+                                     alt="${item.product_name}" class="me-2 rounded"
+                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                <div>
+                                    <h6 class="mb-1 fw-medium small">${item.product_name}</h6>
+                                    <small class="text-muted">Qty: ${item.quantity} × $${item.price.toFixed(2)}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="d-flex gap-2 align-items-center">
+                    ${canUpdate ? `
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="updateOrderStatus(${order.id}, this.value)">
+                            <option value="">Update Status</option>
+                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                        </select>
+                    ` : ''}
+                    
+                    ${isCancelled ? `
+                        <button class="btn btn-warning btn-sm" onclick="approveRefund(${order.id})">
+                            <i class="fas fa-check me-1"></i>Approve Refund
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn btn-outline-info btn-sm" onclick="viewOrderDetails(${order.id})">
+                        <i class="fas fa-eye me-1"></i>View Details
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+    
+    function getStatusBadgeClass(status) {
+        const statusClasses = {
+            'pending': 'bg-warning',
+            'confirmed': 'bg-success',
+            'processing': 'bg-info',
+            'shipped': 'bg-primary',
+            'delivered': 'bg-success',
+            'cancelled': 'bg-danger',
+            'refund_approved': 'bg-secondary'
+        };
+        return statusClasses[status] || 'bg-secondary';
+    }
+    
+    function updateOrderStatus(orderId, newStatus) {
+        if (!newStatus) return;
+        
+        if (confirm(`Update order status to ${newStatus}?`)) {
+            fetch(`/api/seller/order/${orderId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadSellerOrders(); // Reload orders
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to update order status', 'error');
+            });
+        }
+    }
+    
+    function approveRefund(orderId) {
+        if (confirm('Approve refund for this cancelled order?')) {
+            fetch(`/api/seller/order/${orderId}/approve-refund`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadSellerOrders(); // Reload orders
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to approve refund', 'error');
+            });
+        }
+    }
+    
+    function viewOrderDetails(orderId) {
+        // For now, just show an alert. Could be expanded to show detailed modal
+        alert(`Order details for order ID: ${orderId}\n\nThis could open a detailed view with customer information, shipping details, etc.`);
+    }
+    
+    function showToast(message, type) {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
     }
     
     function showAnalyticsModal() {
@@ -256,6 +499,169 @@
     function editProduct(productId) {
         // Redirect to edit product page
         window.location.href = `/seller/edit-product/${productId}`;
+    }
+    
+    // Sales Analytics Chart
+    let salesChart = null;
+    let salesData = null;
+    let currentChartType = 'revenue';
+    
+    function loadSalesChart() {
+        fetch('/api/seller/sales-trend')
+            .then(response => response.json())
+            .then(data => {
+                salesData = data;
+                createSalesChart();
+                updateChartSummary(data.summary);
+                document.getElementById('chartLoading').style.display = 'none';
+                document.getElementById('chartSummary').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading sales data:', error);
+                document.getElementById('chartLoading').innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p>Failed to load sales data</p>
+                    </div>
+                `;
+            });
+    }
+    
+    function createSalesChart() {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (salesChart) {
+            salesChart.destroy();
+        }
+        
+        const isRevenue = currentChartType === 'revenue';
+        const data = isRevenue ? salesData.revenues : salesData.orders;
+        const label = isRevenue ? 'Revenue ($)' : 'Orders';
+        const color = isRevenue ? 'rgba(234, 88, 12, 0.8)' : 'rgba(59, 130, 246, 0.8)';
+        const borderColor = isRevenue ? 'rgba(234, 88, 12, 1)' : 'rgba(59, 130, 246, 1)';
+        
+        // Format dates for display
+        const labels = salesData.dates.map(date => {
+            const d = new Date(date);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: borderColor,
+                    backgroundColor: color,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: borderColor,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: borderColor,
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                const date = salesData.dates[context[0].dataIndex];
+                                return new Date(date).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                });
+                            },
+                            label: function(context) {
+                                if (isRevenue) {
+                                    return `Revenue: $${context.parsed.y.toFixed(2)}`;
+                                } else {
+                                    return `Orders: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                if (isRevenue) {
+                                    return '$' + value.toFixed(0);
+                                } else {
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+    
+    function toggleChartType(type) {
+        currentChartType = type;
+        
+        // Update button states
+        document.getElementById('revenueBtn').className = type === 'revenue' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+        document.getElementById('ordersBtn').className = type === 'orders' ? 'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
+        
+        // Recreate chart with new data
+        if (salesData) {
+            createSalesChart();
+        }
+    }
+    
+    function updateChartSummary(summary) {
+        document.getElementById('summaryRevenue').textContent = '$' + summary.total_revenue.toFixed(2);
+        document.getElementById('summaryOrders').textContent = summary.total_orders;
+        document.getElementById('summaryAvg').textContent = '$' + summary.avg_daily_revenue.toFixed(2);
+        
+        const trendElement = document.getElementById('summaryTrend');
+        const trendValue = summary.trend_percentage;
+        const trendDirection = summary.trend_direction;
+        
+        trendElement.textContent = (trendValue >= 0 ? '+' : '') + trendValue + '%';
+        trendElement.className = `h6 mb-1 fw-bold ${trendDirection === 'up' ? 'text-success' : 'text-danger'}`;
     }
     
     // Animate stats cards on load
@@ -273,6 +679,9 @@
                 }, 100);
             }, index * 100);
         });
+        
+        // Load sales chart
+        loadSalesChart();
     });
 </script>
 {% endblock %}
