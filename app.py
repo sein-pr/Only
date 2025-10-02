@@ -84,6 +84,28 @@ class ProductForm(FlaskForm):
     image = FileField('Product Image')
     additional_images = FileField('Additional Images')
 
+class ProfileForm(FlaskForm):
+    # Personal Information
+    first_name = StringField('First Name', validators=[Length(max=50)])
+    last_name = StringField('Last Name', validators=[Length(max=50)])
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    phone = StringField('Phone', validators=[Length(max=20)])
+    address = TextAreaField('Address')
+    avatar = FileField('Profile Avatar')
+    
+    # Company Information (for sellers)
+    company_name = StringField('Company Name', validators=[Length(max=100)])
+    company_description = TextAreaField('Company Description')
+    company_website = StringField('Website', validators=[Length(max=200)])
+    company_phone = StringField('Company Phone', validators=[Length(max=20)])
+    company_address = TextAreaField('Company Address')
+    company_logo = FileField('Company Logo')
+
+class PasswordResetForm(FlaskForm):
+    current_password = PasswordField('Current Password', validators=[DataRequired()])
+    confirm_reset = StringField('Type "RESET" to confirm', validators=[DataRequired()])
+
 # Helper Functions
 def get_session_id():
     if 'session_id' not in session:
@@ -102,6 +124,14 @@ def get_cart_items():
 @app.context_processor
 def inject_cart_count():
     return dict(get_cart_count=get_cart_count)
+
+@app.context_processor
+def inject_current_user():
+    def get_current_user():
+        if 'user_id' in session:
+            return User.query.get(session['user_id'])
+        return None
+    return dict(get_current_user=get_current_user)
 
 def login_required(f):
     from functools import wraps
@@ -223,6 +253,115 @@ def logout():
     session.clear()
     #flash(f'Goodbye, {username}! You have been logged out.', 'info')
     return redirect(url_for('home'))
+
+# Profile Routes
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user = User.query.get(session['user_id'])
+    form = ProfileForm()
+    
+    if form.validate_on_submit():
+        # Check if username or email already exists (excluding current user)
+        existing_user = User.query.filter(
+            (User.username == form.username.data) | (User.email == form.email.data),
+            User.id != user.id
+        ).first()
+        
+        if existing_user:
+            flash('Username or email already exists.', 'error')
+        else:
+            # Update user information
+            user.username = form.username.data
+            user.email = form.email.data
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+            user.phone = form.phone.data
+            user.address = form.address.data
+            
+            # Handle avatar upload
+            if form.avatar.data:
+                filename = secure_filename(form.avatar.data.filename)
+                if filename:
+                    filename = f"avatar_{user.id}_{uuid.uuid4()}_{filename}"
+                    form.avatar.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    user.avatar_url = f"/static/uploads/{filename}"
+            
+            # Update company information for sellers
+            if user.role == 'seller':
+                user.company_name = form.company_name.data
+                user.company_description = form.company_description.data
+                user.company_website = form.company_website.data
+                user.company_phone = form.company_phone.data
+                user.company_address = form.company_address.data
+                
+                # Handle company logo upload
+                if form.company_logo.data:
+                    filename = secure_filename(form.company_logo.data.filename)
+                    if filename:
+                        filename = f"logo_{user.id}_{uuid.uuid4()}_{filename}"
+                        form.company_logo.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        user.company_logo_url = f"/static/uploads/{filename}"
+            
+            db.session.commit()
+            
+            # Update session username if changed
+            session['username'] = user.username
+            
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('profile'))
+    
+    # Pre-populate form with existing data
+    if request.method == 'GET':
+        form.username.data = user.username
+        form.email.data = user.email
+        form.first_name.data = user.first_name
+        form.last_name.data = user.last_name
+        form.phone.data = user.phone
+        form.address.data = user.address
+        
+        if user.role == 'seller':
+            form.company_name.data = user.company_name
+            form.company_description.data = user.company_description
+            form.company_website.data = user.company_website
+            form.company_phone.data = user.company_phone
+            form.company_address.data = user.company_address
+    
+    return render_template('profile.html', form=form, user=user)
+
+@app.route('/reset-password', methods=['POST'])
+@login_required
+def reset_password():
+    import secrets
+    import string
+    
+    form = PasswordResetForm()
+    user = User.query.get(session['user_id'])
+    
+    if form.validate_on_submit():
+        # Verify current password
+        if not check_password_hash(user.password_hash, form.current_password.data):
+            flash('Current password is incorrect.', 'error')
+            return redirect(url_for('profile'))
+        
+        # Verify confirmation
+        if form.confirm_reset.data.upper() != 'RESET':
+            flash('Please type "RESET" to confirm password reset.', 'error')
+            return redirect(url_for('profile'))
+        
+        # Generate random 12-character password
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        new_password = ''.join(secrets.choice(alphabet) for i in range(12))
+        
+        # Update password
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        
+        flash(f'Password reset successfully! Your new password is: {new_password}', 'success')
+        return redirect(url_for('profile'))
+    
+    flash('Password reset failed. Please check your inputs.', 'error')
+    return redirect(url_for('profile'))
 
 # Main Routes
 @app.route('/')

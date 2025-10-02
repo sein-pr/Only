@@ -11,6 +11,21 @@ class User(db.Model):
     password_hash = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(20), default='buyer')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Profile fields
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    phone = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    avatar_url = db.Column(db.String(200))
+    
+    # Company/Business fields (mainly for sellers)
+    company_name = db.Column(db.String(100))
+    company_description = db.Column(db.Text)
+    company_logo_url = db.Column(db.String(200))
+    company_website = db.Column(db.String(200))
+    company_phone = db.Column(db.String(20))
+    company_address = db.Column(db.Text)
 
     # Relationships
     orders = db.relationship('Order', backref='user', lazy=True)

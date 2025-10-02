@@ -70,15 +70,36 @@
                 <ul class="navbar-nav">
                     {% if session.user_id %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i>{{ session.username }}
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                {% set current_user = get_current_user() %}
+                                {% if current_user and current_user.avatar_url %}
+                                    <img src="{{ current_user.avatar_url }}" alt="Avatar" class="rounded-circle me-2" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white me-2" 
+                                         style="width: 32px; height: 32px; font-size: 12px; font-weight: bold;">
+                                        {% if current_user and (current_user.first_name or current_user.last_name) %}
+                                            {{ (current_user.first_name or session.username)[0].upper() }}{{ (current_user.last_name or '')[0].upper() if current_user.last_name else (session.username[1] if session.username|length > 1 else '').upper() }}
+                                        {% else %}
+                                            {{ session.username[0].upper() }}{{ (session.username[1] if session.username|length > 1 else '').upper() }}
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                {{ session.username }}
                             </a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
                                 {% if session.user_role == 'buyer' %}
-                                <li><a class="dropdown-item" href="{{ url_for('order_history') }}">Order History</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('order_history') }}">
+                                    <i class="fas fa-history me-2"></i>Order History
+                                </a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
                             </ul>
                         </li>
                     {% else %}
