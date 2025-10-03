@@ -12,53 +12,84 @@
             </div>
             
             {% if cart_items %}
-                {% for item in cart_items %}
-                <div class="card mb-3 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-2">
-                                <img src="{{ item.product.image_url or '/placeholder.svg?height=100&width=100' }}" 
-                                    class="img-fluid rounded" alt="{{ item.product.name }}"
-                                    style="height: 80px; width: 80px; object-fit: cover;">
-                            </div>
-                            <div class="col-md-4">
-                                <h6 class="fw-bold mb-1">{{ item.product.name }}</h6>
-                                <small class="text-muted">{{ item.product.category.name }}</small>
-                                <div class="mt-1">
-                                    <small class="text-muted">Sold by {{ item.product.seller.username }}</small>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <span class="fw-bold" style="color: #ea580c;">
-                                    ${{ "%.2f"|format(item.product.price) }}
-                                </span>
-                            </div>
-                            <div class="col-md-2">
-                                <form method="POST" action="{{ url_for('update_cart', item_id=item.id) }}" class="d-inline">
-                                    <div class="input-group input-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity(this)">-</button>
-                                        <input type="number" name="quantity" class="form-control text-center" 
-                                            value="{{ item.quantity }}" min="1" max="10" onchange="this.form.submit()">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity(this)">+</button>
+                <!-- Cart Items with Save for Later -->
+                <div id="cartItems">
+                    {% for item in cart_items %}
+                    <div class="card mb-3 border-0 shadow-sm {% if item.save_for_later %}opacity-75{% endif %}">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input cart-item-checkbox" 
+                                               type="checkbox" 
+                                               name="selected_items" 
+                                               value="{{ item.id }}"
+                                               id="item_{{ item.id }}"
+                                               {% if not item.save_for_later %}checked{% endif %}
+                                               onchange="updateCartTotals()">
+                                        <label class="form-check-label" for="item_{{ item.id }}">
+                                            <small class="text-muted">Buy</small>
+                                        </label>
                                     </div>
-                                </form>
-                            </div>
-                            <div class="col-md-1">
-                                <span class="fw-bold">
-                                    ${{ "%.2f"|format(item.product.price * item.quantity) }}
-                                </span>
-                            </div>
-                            <div class="col-md-1">
-                                <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" 
-                                class="btn btn-outline-danger btn-sm" 
-                                onclick="return confirm('Remove this item from cart?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                </div>
+                                <div class="col-md-2">
+                                    <img src="{{ item.product.image_url or '/placeholder.svg?height=100&width=100' }}" 
+                                        class="img-fluid rounded" alt="{{ item.product.name }}"
+                                        style="height: 80px; width: 80px; object-fit: cover;">
+                                </div>
+                                <div class="col-md-3">
+                                    <h6 class="fw-bold mb-1">{{ item.product.name }}</h6>
+                                    <small class="text-muted">{{ item.product.category.name }}</small>
+                                    <div class="mt-1">
+                                        <small class="text-muted">Sold by {{ item.product.seller.username }}</small>
+                                    </div>
+                                    {% if item.save_for_later %}
+                                    <div class="mt-1">
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-bookmark me-1"></i>Saved for Later
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="fw-bold" style="color: #ea580c;">
+                                        ${{ "%.2f"|format(item.product.price) }}
+                                    </span>
+                                </div>
+                                <div class="col-md-2">
+                                    <form method="POST" action="{{ url_for('update_cart', item_id=item.id) }}" class="d-inline">
+                                        <div class="input-group input-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity(this)">-</button>
+                                            <input type="number" name="quantity" class="form-control text-center" 
+                                                value="{{ item.quantity }}" min="1" max="10" onchange="this.form.submit()">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity(this)">+</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="col-md-1">
+                                    <span class="fw-bold">
+                                        ${{ "%.2f"|format(item.product.price * item.quantity) }}
+                                    </span>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        <button type="button" 
+                                                class="btn btn-outline-{% if item.save_for_later %}primary{% else %}warning{% endif %} btn-sm" 
+                                                onclick="toggleSaveForLater({{ item.id }})">
+                                            <i class="fas fa-{% if item.save_for_later %}undo{% else %}bookmark{% endif %}"></i>
+                                        </button>
+                                        <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" 
+                                        class="btn btn-outline-danger btn-sm" 
+                                        onclick="return confirm('Remove this item from cart?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
                 
                 <!-- Continue Shopping -->
                 <div class="text-center mt-4">
@@ -88,39 +119,29 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal:</span>
-                        <span>${{ "%.2f"|format(total) }}</span>
+                        <span>Selected Items:</span>
+                        <span id="selectedSubtotal">$0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Shipping:</span>
-                        <span>
-                            {% if shipping == 0 %}
-                                Free
-                            {% else %}
-                                ${{ "%.2f"|format(shipping) }}
-                            {% endif %}
-                        </span>
+                        <span id="selectedShipping">Free</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Tax:</span>
-                        <span>${{ "%.2f"|format(tax) }}</span>
+                        <span id="selectedTax">$0.00</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between fw-bold h5">
                         <span>Total:</span>
-                        <span style="color: #ea580c;">
-                            ${{ "%.2f"|format(grand_total) }}
-                        </span>
+                        <span style="color: #ea580c;" id="selectedTotal">$0.00</span>
                     </div>
                     
-                    {% if remaining_for_free_shipping > 0 %}
-                    <div class="alert alert-info mt-3">
+                    <div id="shippingAlert" class="alert alert-info mt-3" style="display: none;">
                         <small>
                             <i class="fas fa-info-circle me-1"></i>
-                            Add ${{ "%.2f"|format(remaining_for_free_shipping) }} more for free shipping!
+                            Add $<span id="remainingAmount">0.00</span> more for free shipping!
                         </small>
                     </div>
-                    {% endif %}
                 </div>
 
                     
@@ -161,6 +182,23 @@
 
 {% block scripts %}
 <script>
+    // Cart data from server
+    const cartData = {
+        items: [
+            {% for item in cart_items %}
+            {
+                id: {{ item.id }},
+                price: {{ item.product.price }},
+                quantity: {{ item.quantity }},
+                saveForLater: {{ item.save_for_later|lower }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        taxRate: 0.08,
+        shippingThreshold: 50.00,
+        shippingCost: 5.99
+    };
+
     function increaseQuantity(button) {
         const input = button.previousElementSibling;
         const currentValue = parseInt(input.value);
@@ -179,9 +217,90 @@
         }
     }
     
-    function saveForLater() {
-        // Implement save for later functionality
-        alert('Save for later functionality coming soon!');
+    function updateCartTotals() {
+        const checkboxes = document.querySelectorAll('.cart-item-checkbox:checked');
+        let subtotal = 0;
+        
+        checkboxes.forEach(checkbox => {
+            const itemId = parseInt(checkbox.value);
+            const item = cartData.items.find(i => i.id === itemId);
+            if (item) {
+                subtotal += item.price * item.quantity;
+            }
+        });
+        
+        const tax = subtotal * cartData.taxRate;
+        const shipping = subtotal >= cartData.shippingThreshold ? 0 : cartData.shippingCost;
+        const total = subtotal + tax + shipping;
+        
+        // Update display
+        document.getElementById('selectedSubtotal').textContent = '$' + subtotal.toFixed(2);
+        document.getElementById('selectedTax').textContent = '$' + tax.toFixed(2);
+        document.getElementById('selectedShipping').textContent = shipping === 0 ? 'Free' : '$' + shipping.toFixed(2);
+        document.getElementById('selectedTotal').textContent = '$' + total.toFixed(2);
+        
+        // Update shipping alert
+        const shippingAlert = document.getElementById('shippingAlert');
+        const remainingAmount = document.getElementById('remainingAmount');
+        
+        if (subtotal > 0 && subtotal < cartData.shippingThreshold) {
+            const remaining = cartData.shippingThreshold - subtotal;
+            remainingAmount.textContent = remaining.toFixed(2);
+            shippingAlert.style.display = 'block';
+        } else {
+            shippingAlert.style.display = 'none';
+        }
+        
+        // Update cart selection on server
+        updateCartSelection();
     }
+    
+    function updateCartSelection() {
+        const checkboxes = document.querySelectorAll('.cart-item-checkbox:checked');
+        const selectedItems = Array.from(checkboxes).map(checkbox => parseInt(checkbox.value));
+        
+        fetch('/api/cart-selection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ selected_items: selectedItems })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Error updating cart selection:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating cart selection:', error);
+        });
+    }
+    
+    function toggleSaveForLater(itemId) {
+        fetch(`/api/cart-item/${itemId}/toggle-save-later`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reload to update the display
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the item.');
+        });
+    }
+    
+    // Initialize totals on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCartTotals();
+    });
 </script>
 {% endblock %}

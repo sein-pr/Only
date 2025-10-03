@@ -598,8 +598,8 @@ def reset_password():
 # Main Routes
 @app.route('/')
 def home():
-    # Get featured products (latest 8 products)
-    featured_products = Product.query.order_by(Product.created_at.desc()).limit(8).all()
+    # Get featured products (latest 8 active products)
+    featured_products = Product.query.filter_by(status='active').order_by(Product.created_at.desc()).limit(8).all()
     categories = Category.query.all()
     return render_template('home.html', featured_products=featured_products, categories=categories)
 
@@ -636,7 +636,7 @@ def shop():
         # Log or ignore bad input, setting to None effectively disables filter
         pass 
 
-    query = Product.query
+    query = Product.query.filter_by(status='active')  # Only show active products
     
     if category_id:
         query = query.filter_by(category_id=category_id)
@@ -691,9 +691,17 @@ def shop():
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Check if product is inactive and user is not the seller
+    if product.status == 'inactive':
+        if 'user_id' not in session or product.seller_id != session['user_id']:
+            flash('This product is no longer available.', 'warning')
+            return redirect(url_for('shop'))
+    
     related_products = Product.query.filter(
         Product.category_id == product.category_id,
-        Product.id != product.id
+        Product.id != product.id,
+        Product.status == 'active'  # Only show active related products
     ).limit(4).all()
     
     # Track the full detail view (only for buyers, not sellers of their own products)
@@ -705,6 +713,9 @@ def product_detail(product_id):
     else:
         # Track for guest users
         track_product_view(product_id, 'full_detail')
+    
+    # Get view count for this product
+    view_count = ProductView.query.filter_by(product_id=product_id).count()
     
     # Check if product is in user's wishlist
     is_in_wishlist = False
@@ -724,7 +735,8 @@ def product_detail(product_id):
                           product=product, 
                           related_products=related_products,
                           is_in_wishlist=is_in_wishlist,
-                          is_own_product=is_own_product)
+                          is_own_product=is_own_product,
+                          view_count=view_count)
 
 # Cart Routes
 
@@ -733,7 +745,9 @@ def cart():
     session_id = get_session_id()
     cart_items = CartItem.query.filter_by(session_id=session_id).all()
     
-    total = sum(item.product.price * item.quantity for item in cart_items)
+    # Calculate totals for items that are NOT saved for later
+    active_items = [item for item in cart_items if not item.save_for_later]
+    total = sum(item.product.price * item.quantity for item in active_items)
     tax_rate = Decimal("0.08")
     shipping_threshold = Decimal("50.00")
     shipping_cost = Decimal("5.99")
@@ -759,6 +773,11 @@ def cart():
 # @csrf.exempt
 def add_to_cart(product_id):
     product = Product.query.get_or_404(product_id)
+    
+    # Check if product is inactive
+    if product.status == 'inactive':
+        flash('This product is no longer available.', 'error')
+        return redirect(request.referrer or url_for('shop'))
     
     # Prevent sellers from buying their own products
     if 'user_id' in session and product.seller_id == session['user_id']:
@@ -848,6 +867,13 @@ def api_cart_count():
 def api_add_to_cart(product_id):
     try:
         product = Product.query.get_or_404(product_id)
+        
+        # Check if product is inactive
+        if product.status == 'inactive':
+            return jsonify({
+                'success': False,
+                'message': 'This product is no longer available.'
+            }), 400
         
         # Prevent sellers from buying their own products
         if 'user_id' in session and product.seller_id == session['user_id']:
@@ -950,6 +976,96 @@ def api_remove_cart_item(item_id):
             'message': 'An error occurred while removing item'
         }), 500
 
+@app.route('/api/cart-item/<int:item_id>/toggle-save-later', methods=['POST'])
+def api_toggle_save_for_later(item_id):
+    """Toggle save for later status of a cart item"""
+    try:
+        session_id = get_session_id()
+        cart_item = CartItem.query.filter_by(
+            id=item_id, 
+            session_id=session_id
+        ).first_or_404()
+        
+        # Toggle the save_for_later status
+        cart_item.save_for_later = not cart_item.save_for_later
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Item {"saved for later" if cart_item.save_for_later else "moved to cart"}',
+            'save_for_later': cart_item.save_for_later
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while updating item'
+        }), 500
+
+@app.route('/api/cart-selection', methods=['POST'])
+def api_update_cart_selection():
+    """Update which items are selected for checkout"""
+    try:
+        session_id = get_session_id()
+        selected_items = request.json.get('selected_items', [])
+        
+        # Get all cart items for this session
+        cart_items = CartItem.query.filter_by(session_id=session_id).all()
+        
+        # Update save_for_later status based on selection
+        for item in cart_items:
+            item.save_for_later = item.id not in selected_items
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cart selection updated'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while updating selection'
+        }), 500
+
+@app.route('/api/product/<int:product_id>/toggle-status', methods=['POST'])
+@login_required
+def api_toggle_product_status(product_id):
+    """Toggle product status between active and inactive"""
+    try:
+        # Get the product and ensure it belongs to the current seller
+        product = Product.query.filter_by(
+            id=product_id, 
+            seller_id=session['user_id']
+        ).first_or_404()
+        
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        # Validate status
+        if new_status not in ['active', 'inactive']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid status. Must be "active" or "inactive"'
+            }), 400
+        
+        # Update product status
+        product.status = new_status
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Product {new_status} successfully',
+            'status': new_status
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while updating product status'
+        }), 500
+
 @app.route('/api/wishlist/add/<int:product_id>', methods=['POST'])
 @login_required
 def add_to_wishlist(product_id):
@@ -1024,6 +1140,11 @@ def remove_from_wishlist(product_id):
 def product_quick_view(product_id):
     product = Product.query.get_or_404(product_id)
     
+    # Check if product is inactive and user is not the seller
+    if product.status == 'inactive':
+        if 'user_id' not in session or product.seller_id != session['user_id']:
+            return jsonify({'error': 'Product no longer available'}), 404
+    
     # Track the quick view (only for buyers, not sellers of their own products)
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
@@ -1034,7 +1155,10 @@ def product_quick_view(product_id):
         # Track for guest users
         track_product_view(product_id, 'quick_view')
     
-    return render_template('partials/quick_view.html', product=product)
+    # Get view count for this product
+    view_count = ProductView.query.filter_by(product_id=product_id).count()
+    
+    return render_template('partials/quick_view.html', product=product, view_count=view_count)
 
 @app.route('/api/product/<int:product_id>/track-view', methods=['POST'])
 def track_view_api(product_id):
@@ -1436,11 +1560,14 @@ def checkout():
     session_id = get_session_id()
     cart_items = CartItem.query.filter_by(session_id=session_id).all()
     
-    if not cart_items:
-        flash('Your cart is empty. Add some items before checkout.', 'warning')
-        return redirect(url_for('shop'))
+    # Only include items that are NOT saved for later
+    active_cart_items = [item for item in cart_items if not item.save_for_later]
     
-    subtotal = sum(item.product.price * item.quantity for item in cart_items)
+    if not active_cart_items:
+        flash('No items selected for checkout. Please select items to purchase.', 'warning')
+        return redirect(url_for('cart'))
+    
+    subtotal = sum(item.product.price * item.quantity for item in active_cart_items)
     shipping_threshold = Decimal("50.00")
     shipping_cost = Decimal("5.99")
     tax_rate = Decimal("0.08")
@@ -1450,7 +1577,7 @@ def checkout():
     total = subtotal + shipping + tax
     
     return render_template('checkout.html', 
-                         cart_items=cart_items,
+                         cart_items=active_cart_items,
                          subtotal=subtotal,
                          shipping=shipping,
                          tax=tax,
@@ -1465,11 +1592,14 @@ def create_payment_intent():
         session_id = get_session_id()
         cart_items = CartItem.query.filter_by(session_id=session_id).all()
         
-        if not cart_items:
-            return jsonify({'error': 'Cart is empty'}), 400
+        # Only include items that are NOT saved for later
+        active_cart_items = [item for item in cart_items if not item.save_for_later]
         
-        # Calculate total
-        subtotal = sum(item.product.price * item.quantity for item in cart_items)
+        if not active_cart_items:
+            return jsonify({'error': 'No items selected for purchase'}), 400
+        
+        # Calculate total for active items only
+        subtotal = sum(item.product.price * item.quantity for item in active_cart_items)
         shipping_threshold = Decimal("50.00")
         shipping_cost = Decimal("5.99")
         tax_rate = Decimal("0.08")
@@ -1534,11 +1664,14 @@ def process_stripe_payment():
         session_id = get_session_id()
         cart_items = CartItem.query.filter_by(session_id=session_id).all()
         
-        if not cart_items:
-            return jsonify({'success': False, 'error': 'Cart is empty'}), 400
+        # Only include items that are NOT saved for later
+        active_cart_items = [item for item in cart_items if not item.save_for_later]
         
-        # Calculate totals
-        subtotal = sum(item.product.price * item.quantity for item in cart_items)
+        if not active_cart_items:
+            return jsonify({'success': False, 'error': 'No items selected for purchase'}), 400
+        
+        # Calculate totals for active items only
+        subtotal = sum(item.product.price * item.quantity for item in active_cart_items)
         shipping_threshold = Decimal("50.00")
         shipping_cost = Decimal("5.99")
         tax_rate = Decimal("0.08")
@@ -1559,8 +1692,14 @@ def process_stripe_payment():
         db.session.add(order)
         db.session.flush()
         
+        # Only process items that are NOT saved for later
+        active_cart_items = [item for item in cart_items if not item.save_for_later]
+        
+        if not active_cart_items:
+            return jsonify({'success': False, 'error': 'No items selected for purchase'}), 400
+        
         # Create order items and update stock
-        for cart_item in cart_items:
+        for cart_item in active_cart_items:
             if cart_item.product.stock_quantity < cart_item.quantity:
                 db.session.rollback()
                 return jsonify({'success': False, 'error': f'{cart_item.product.name} is out of stock'}), 400
@@ -1574,8 +1713,8 @@ def process_stripe_payment():
             db.session.add(order_item)
             cart_item.product.stock_quantity -= cart_item.quantity
         
-        # Clear cart
-        for cart_item in cart_items:
+        # Clear only the purchased items from cart (keep saved for later items)
+        for cart_item in active_cart_items:
             db.session.delete(cart_item)
         
         db.session.commit()

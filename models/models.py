@@ -65,6 +65,7 @@ class Product(db.Model):
     stock_quantity = db.Column(db.Integer, default=0)
     image_url = db.Column(db.String(200))
     additional_images = db.Column(db.JSON)  # Store array of additional image URLs
+    status = db.Column(db.String(20), default='active')  # active, inactive
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Foreign Keys
@@ -104,6 +105,7 @@ class CartItem(db.Model):
     session_id = db.Column(db.String(100), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
+    save_for_later = db.Column(db.Boolean, default=False)  # New field for save for later
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

@@ -13,10 +13,13 @@
         
         <div class="mb-3">
             {% if product.stock_quantity > 0 %}
-                <span class="badge bg-success">In Stock</span>
+                <span class="badge bg-success me-2">In Stock</span>
             {% else %}
-                <span class="badge bg-danger">Out of Stock</span>
+                <span class="badge bg-danger me-2">Out of Stock</span>
             {% endif %}
+            <span class="badge bg-info">
+                <i class="fas fa-eye me-1"></i>{{ view_count }} views
+            </span>
         </div>
         
         <div class="d-grid gap-2">

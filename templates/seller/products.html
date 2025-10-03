@@ -77,11 +77,13 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-3">
-                                    {% if product.stock_quantity > 0 %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
+                                    <button class="btn btn-sm {% if product.status == 'active' %}btn-success{% else %}btn-secondary{% endif %} status-toggle" 
+                                            onclick="toggleProductStatus({{ product.id }})" 
+                                            data-product-id="{{ product.id }}" 
+                                            data-current-status="{{ product.status }}">
+                                        <i class="fas fa-{% if product.status == 'active' %}check{% else %}times{% endif %} me-1"></i>
+                                        {{ product.status.title() }}
+                                    </button>
                                 </td>
                                 <td class="py-3">
                                     <div class="btn-group btn-group-sm">
@@ -218,6 +220,68 @@
                 alert('An error occurred while connecting to the server.');
             });
         }
+    }
+    
+    function toggleProductStatus(productId) {
+        const button = document.querySelector(`[data-product-id="${productId}"]`);
+        const currentStatus = button.getAttribute('data-current-status');
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        
+        // Show loading state
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+        
+        fetch(`/api/product/${productId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button appearance
+                button.setAttribute('data-current-status', newStatus);
+                button.className = `btn btn-sm ${newStatus === 'active' ? 'btn-success' : 'btn-secondary'} status-toggle`;
+                button.innerHTML = `<i class="fas fa-${newStatus === 'active' ? 'check' : 'times'} me-1"></i>${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`;
+                
+                // Show success message
+                showToast(`Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, 'success');
+            } else {
+                alert('Error updating product status: ' + data.message);
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = `<i class="fas fa-${currentStatus === 'active' ? 'check' : 'times'} me-1"></i>${currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the product status.');
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = `<i class="fas fa-${currentStatus === 'active' ? 'check' : 'times'} me-1"></i>${currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}`;
+        });
+    }
+    
+    function showToast(message, type = 'info') {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
     }
 </script>
 {% endblock %}
