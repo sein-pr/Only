@@ -603,6 +603,13 @@ def home():
     categories = Category.query.all()
     return render_template('home.html', featured_products=featured_products, categories=categories)
 
+@app.route('/api-docs')
+def api_documentation():
+    """API Documentation page"""
+    from datetime import datetime
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return render_template('api_documentation.html', current_time=current_time)
+
 from decimal import Decimal # Ensure this import is present at the top of the file
 
 @app.route('/shop')

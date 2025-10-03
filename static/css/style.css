@@ -395,6 +395,211 @@
   }
 }
 
+/* API Documentation Styles */
+.api-docs {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.api-docs .card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.api-docs .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.api-docs .card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  font-weight: 600;
+}
+
+.api-docs pre {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.api-docs code {
+  background-color: #f8f9fa;
+  color: #e83e8c;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.api-docs .badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  font-weight: 500;
+}
+
+.api-docs .bg-light {
+  background-color: #f8f9fa !important;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+}
+
+.api-docs .text-muted {
+  color: #6c757d !important;
+}
+
+.api-docs .fw-medium {
+  font-weight: 500;
+}
+
+.api-docs .fw-bold {
+  font-weight: 700;
+}
+
+.api-docs .display-4 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.api-docs .lead {
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: #6c757d;
+}
+
+.api-docs .alert {
+  border: none;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+}
+
+.api-docs .alert-info {
+  border-left-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.api-docs .alert-warning {
+  border-left-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.api-docs .alert-success {
+  border-left-color: #10b981;
+  background-color: #ecfdf5;
+}
+
+.api-docs .alert-danger {
+  border-left-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* HTTP Method Badges */
+.api-docs .badge.bg-success {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.api-docs .badge.bg-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+}
+
+.api-docs .badge.bg-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+.api-docs .badge.bg-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+}
+
+.api-docs .badge.bg-info {
+  background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+}
+
+.api-docs .badge.bg-secondary {
+  background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+}
+
+.api-docs .badge.bg-dark {
+  background: linear-gradient(135deg, #1f2937, #111827) !important;
+}
+
+/* Code Syntax Highlighting */
+.api-docs pre code {
+  background: none;
+  color: #374151;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875rem;
+}
+
+.api-docs .bg-light pre {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+/* Section Headers */
+.api-docs .card-header h4,
+.api-docs .card-header h5 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.api-docs .card-header i {
+  opacity: 0.9;
+}
+
+/* Status Indicators */
+.api-docs .status-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.api-docs .status-indicator.online {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.api-docs .status-indicator.offline {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+/* Copy to Clipboard Button */
+.api-docs .copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.api-docs .copy-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #374151;
+}
+
+.api-docs .copy-btn.copied {
+  background: #10b981;
+  color: white;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .mini-cart {
@@ -406,5 +611,46 @@
   .floating-cart {
     bottom: 15px;
     right: 15px;
+  }
+  
+  .api-docs .display-4 {
+    font-size: 2rem;
+  }
+  
+  .api-docs .lead {
+    font-size: 1.1rem;
+  }
+  
+  .api-docs pre {
+    font-size: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .api-docs .card-body {
+    padding: 1rem;
+  }
+  
+  .api-docs .card-header {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .api-docs .display-4 {
+    font-size: 1.75rem;
+  }
+  
+  .api-docs .lead {
+    font-size: 1rem;
+  }
+  
+  .api-docs pre {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+  
+  .api-docs .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
   }
 }

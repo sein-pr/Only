@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation - Only{% endblock %}
+
+{% block content %}
+<div class="container py-5 api-docs">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="text-center">
+                <h1 class="display-4 fw-bold text-primary mb-3">
+                    <i class="fas fa-code me-3"></i>Only API Documentation
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Comprehensive API documentation for the Only e-commerce platform
+                </p>
+                <div class="badge bg-primary fs-6 px-3 py-2">
+                    <i class="fas fa-info-circle me-2"></i>Version 1.0
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Introduction Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="h3 mb-3">
+                        <i class="fas fa-rocket text-primary me-2"></i>About Only API
+                    </h2>
+                    <p class="mb-3">
+                        The Only API provides a comprehensive set of endpoints for building e-commerce applications. 
+                        Our API supports both buyer and seller functionalities, including product management, 
+                        shopping cart operations, order processing, and analytics.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-shopping-cart text-success me-2"></i>
+                                <span class="fw-medium">Shopping Cart</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-store text-warning me-2"></i>
+                                <span class="fw-medium">Seller Dashboard</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-chart-line text-info me-2"></i>
+                                <span class="fw-medium">Analytics</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Base URL Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-link me-2"></i>Base URL
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <code class="fs-5">https://your-domain.com</code>
+                    <p class="text-muted mt-2 mb-0">All API endpoints are relative to this base URL</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Authentication
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Most API endpoints require user authentication. Authentication is handled through Flask sessions.</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Some endpoints are accessible to guest users (like product browsing), while others require login.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="h3 mb-4">
+                <i class="fas fa-list me-2"></i>API Endpoints
+            </h2>
+        </div>
+    </div>
+
+    <!-- Cart Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Cart Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- GET /api/cart-items -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/cart-items</code>
+                        </div>
+                        <p class="text-muted mb-2">Retrieve all items in the current user's cart</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "items": [
+    {
+      "id": 1,
+      "name": "Product Name",
+      "price": 29.99,
+      "quantity": 2,
+      "total": 59.98,
+      "image_url": "/static/uploads/image.jpg",
+      "stock_quantity": 10
+    }
+  ],
+  "total": 59.98,
+  "count": 1,
+  "shipping": 5.99,
+  "tax": 4.80
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- GET /api/cart-count -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/cart-count</code>
+                        </div>
+                        <p class="text-muted mb-2">Get the total number of items in the cart</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "count": 3
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/add-to-cart/{product_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/add-to-cart/{product_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Add a product to the cart</p>
+                        <div class="bg-light p-3 rounded mb-2">
+                            <strong>Request Body:</strong>
+                            <pre class="mb-0"><code>{
+  "quantity": 2
+}</code></pre>
+                        </div>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Product added to cart!",
+  "cart_count": 3
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/update-cart-item/{item_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/update-cart-item/{item_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Update the quantity of a cart item</p>
+                        <div class="bg-light p-3 rounded mb-2">
+                            <strong>Request Body:</strong>
+                            <pre class="mb-0"><code>{
+  "quantity": 3
+}</code></pre>
+                        </div>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "cart_count": 3
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- DELETE /api/remove-cart-item/{item_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-danger me-2">DELETE</span>
+                            <code class="fs-6">/api/remove-cart-item/{item_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Remove an item from the cart</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Item removed from cart",
+  "cart_count": 2
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-box me-2"></i>Product Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- GET /api/product/{product_id}/quick-view -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/product/{product_id}/quick-view</code>
+                        </div>
+                        <p class="text-muted mb-2">Get a quick view modal for a product</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <p class="text-muted mb-0">Returns HTML content for the quick view modal</p>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/product/{product_id}/track-view -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/product/{product_id}/track-view</code>
+                        </div>
+                        <p class="text-muted mb-2">Track a product view for analytics</p>
+                        <div class="bg-light p-3 rounded mb-2">
+                            <strong>Request Body:</strong>
+                            <pre class="mb-0"><code>{
+  "view_type": "quick_view"
+}</code></pre>
+                        </div>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wishlist Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-heart me-2"></i>Wishlist Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- POST /api/wishlist/add/{product_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/wishlist/add/{product_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Add a product to the user's wishlist (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Added to wishlist!"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- DELETE /api/wishlist/remove/{product_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-danger me-2">DELETE</span>
+                            <code class="fs-6">/api/wishlist/remove/{product_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Remove a product from the user's wishlist (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Removed from wishlist!"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Management Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-shopping-bag me-2"></i>Order Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- POST /api/order/{order_id}/cancel -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/order/{order_id}/cancel</code>
+                        </div>
+                        <p class="text-muted mb-2">Cancel an order (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Order cancelled successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- GET /api/order/{order_id}/track -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/order/{order_id}/track</code>
+                        </div>
+                        <p class="text-muted mb-2">Get order tracking information (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "order_number": "ORD-20241201-ABC12345",
+  "status": "shipped",
+  "tracking_stages": [
+    {
+      "status": "Order Placed",
+      "date": "2024-12-01T10:00:00Z",
+      "completed": true
+    }
+  ],
+  "estimated_delivery": "3-5 business days"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/reorder/{order_id} -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/reorder/{order_id}</code>
+                        </div>
+                        <p class="text-muted mb-2">Add all items from a previous order to cart (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "3 items added to cart",
+  "cart_count": 3
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Analytics Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Seller Analytics
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- GET /api/seller/sales-trend -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/seller/sales-trend</code>
+                        </div>
+                        <p class="text-muted mb-2">Get sales trend data for the last 30 days (seller authentication required)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "dates": ["2024-11-01", "2024-11-02", ...],
+  "revenues": [150.00, 200.00, ...],
+  "orders": [3, 5, ...],
+  "summary": {
+    "total_revenue": 5000.00,
+    "total_orders": 45,
+    "avg_daily_revenue": 166.67,
+    "trend_percentage": 15.5,
+    "trend_direction": "up"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- GET /api/seller/orders -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">GET</span>
+                            <code class="fs-6">/api/seller/orders</code>
+                        </div>
+                        <p class="text-muted mb-2">Get all orders for seller's products (seller authentication required)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "orders": [
+    {
+      "id": 1,
+      "order_number": "ORD-20241201-ABC12345",
+      "customer_name": "John Doe",
+      "customer_email": "john@example.com",
+      "status": "confirmed",
+      "created_at": "2024-12-01 10:00",
+      "total_amount": 99.99,
+      "items": [
+        {
+          "id": 1,
+          "product_name": "Product Name",
+          "product_image": "/static/uploads/image.jpg",
+          "quantity": 2,
+          "price": 49.99
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/seller/order/{order_id}/update-status -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/seller/order/{order_id}/update-status</code>
+                        </div>
+                        <p class="text-muted mb-2">Update order status (seller authentication required)</p>
+                        <div class="bg-light p-3 rounded mb-2">
+                            <strong>Request Body:</strong>
+                            <pre class="mb-0"><code>{
+  "status": "shipped"
+}</code></pre>
+                        </div>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Order status updated to shipped"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /api/seller/order/{order_id}/approve-refund -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/api/seller/order/{order_id}/approve-refund</code>
+                        </div>
+                        <p class="text-muted mb-2">Approve refund for cancelled order (seller authentication required)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "message": "Refund approved successfully"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Payment Processing
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- POST /create-payment-intent -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/create-payment-intent</code>
+                        </div>
+                        <p class="text-muted mb-2">Create a Stripe payment intent (requires authentication)</p>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "client_secret": "pi_1234567890_secret_abcdef"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- POST /process-stripe-payment -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">POST</span>
+                            <code class="fs-6">/process-stripe-payment</code>
+                        </div>
+                        <p class="text-muted mb-2">Process completed Stripe payment (requires authentication)</p>
+                        <div class="bg-light p-3 rounded mb-2">
+                            <strong>Request Body:</strong>
+                            <pre class="mb-0"><code>{
+  "payment_intent_id": "pi_1234567890",
+  "shipping_info": {
+    "name": "John Doe",
+    "address": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zip": "10001"
+  }
+}</code></pre>
+                        </div>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Response:</strong>
+                            <pre class="mb-0"><code>{
+  "success": true,
+  "order_id": 123,
+  "order_number": "ORD-20241201-ABC12345"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Handling Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error Handling
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">All API endpoints return consistent error responses:</p>
+                    <div class="bg-light p-3 rounded">
+                        <strong>Error Response Format:</strong>
+                        <pre class="mb-0"><code>{
+  "success": false,
+  "message": "Error description",
+  "error": "Detailed error information"
+}</code></pre>
+                    </div>
+                    <div class="mt-3">
+                        <h5>Common HTTP Status Codes:</h5>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-success me-2">200</span> Success</li>
+                            <li><span class="badge bg-warning me-2">400</span> Bad Request</li>
+                            <li><span class="badge bg-danger me-2">401</span> Unauthorized</li>
+                            <li><span class="badge bg-danger me-2">403</span> Forbidden</li>
+                            <li><span class="badge bg-danger me-2">404</span> Not Found</li>
+                            <li><span class="badge bg-danger me-2">500</span> Internal Server Error</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Limiting Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Rate Limiting
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        API requests are currently not rate-limited, but we recommend implementing reasonable 
+                        request intervals to ensure optimal performance for all users.
+                    </p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Best Practice:</strong> Implement client-side throttling for high-frequency operations like cart updates.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0">
+                        <i class="fas fa-life-ring me-2"></i>Support & Contact
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Need Help?</h5>
+                            <p class="text-muted mb-3">
+                                If you have questions about the API or need assistance with integration, 
+                                please don't hesitate to reach out to our support team.
+                            </p>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-envelope text-primary me-2"></i>
+                                <span>support@only.com</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-phone text-primary me-2"></i>
+                                <span>+1 (555) 123-4567</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3">API Status</h5>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="badge bg-success me-2">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <span>All systems operational</span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                Last updated: {{ current_time }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
