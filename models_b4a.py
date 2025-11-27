@@ -186,10 +186,10 @@ class BaseModel:
         if self.objectId:
             client.delete(self.__class__.__name__, self.objectId)
 
-    @classmethod
-    @property
-    def query(cls):
-        return Query(cls)
+    def __init_subclass__(cls, **kwargs):
+        """Automatically add query property to all subclasses"""
+        super().__init_subclass__(**kwargs)
+        cls.query = Query(cls)
 
 # Mock DB Session
 class Session:

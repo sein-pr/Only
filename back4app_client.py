@@ -2,6 +2,17 @@ import os
 import requests
 import json
 from urllib.parse import urljoin
+from decimal import Decimal
+
+def convert_decimals(obj):
+    """Recursively convert Decimal objects to float for JSON serialization"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    return obj
 
 class Back4AppClient:
     def __init__(self):
@@ -40,6 +51,8 @@ class Back4AppClient:
     def create(self, class_name, data):
         """Creates a new object in the specified class."""
         url = self._get_url(f'classes/{class_name}')
+        # Convert Decimals to floats for JSON serialization
+        data = convert_decimals(data)
         response = requests.post(url, headers=self.headers, json=data)
         response.raise_for_status()
         return response.json()
@@ -56,6 +69,8 @@ class Back4AppClient:
     def update(self, class_name, object_id, data):
         """Updates an object."""
         url = self._get_url(f'classes/{class_name}/{object_id}')
+        # Convert Decimals to floats for JSON serialization
+        data = convert_decimals(data)
         response = requests.put(url, headers=self.headers, json=data)
         response.raise_for_status()
         return response.json()
