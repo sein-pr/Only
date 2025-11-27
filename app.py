@@ -1398,6 +1398,7 @@ def duplicate_product(product_id):
         seller_id=original_product.seller_id, # Inherits the seller ID
         image_url=original_product.image_url,
         additional_images=original_product.additional_images.copy() if original_product.additional_images else None,
+        status=original_product.status if hasattr(original_product, 'status') and original_product.status else 'active',
         created_at=datetime.utcnow() # Set a new creation date
     )
     
@@ -1479,7 +1480,8 @@ def add_product():
             category_id=form.category_id.data,
             seller_id=session['user_id'],
             image_url=image_url,
-            additional_images=additional_images if additional_images else None
+            additional_images=additional_images if additional_images else None,
+            status='active'  # Set default status to active
         )
         
         db.session.add(product)

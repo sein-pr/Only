@@ -186,10 +186,15 @@ class BaseModel:
         if self.objectId:
             client.delete(self.__class__.__name__, self.objectId)
 
-    def __init_subclass__(cls, **kwargs):
-        """Automatically add query property to all subclasses"""
-        super().__init_subclass__(**kwargs)
-        cls.query = Query(cls)
+class QueryDescriptor:
+    """Descriptor that returns a new Query instance each time it's accessed"""
+    def __get__(self, obj, objtype=None):
+        if objtype is None:
+            return self
+        return Query(objtype)
+
+# Add query descriptor to BaseModel
+BaseModel.query = QueryDescriptor()
 
 # Mock DB Session
 class Session:
