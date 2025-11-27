@@ -7,6 +7,6 @@ stripe==6.7.0
 email-validator==2.0.0
 python-dotenv==1.0.0
 psycopg2-binary==2.9.7
-gunicorn==21.2.0pyt
+gunicorn==21.2.0
 est==7.4.3
 hypothesis==6.92.1
