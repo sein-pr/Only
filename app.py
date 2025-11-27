@@ -2232,4 +2232,8 @@ if __name__ == '__main__':
         
         print("Database tables created successfully!")
     
-        app.run(port="5002",debug=True)
+    # Use PORT from environment variable (for production) or default to 5002 (for local dev)
+    port = int(os.environ.get('PORT', 5002))
+    # Only enable debug mode if not in production (Railway sets PORT)
+    debug = os.environ.get('PORT') is None
+    app.run(host='0.0.0.0', port=port, debug=debug)
