@@ -64,7 +64,6 @@ validate_environment_variables()
 
 # Now import modules that depend on environment variables
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
@@ -83,24 +82,7 @@ from decimal import Decimal
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# PostgreSQL Configuration
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    # Handle Heroku postgres URL format
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    # Local development PostgreSQL
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
-        f"{os.environ.get('DB_PASSWORD', 'password')}@"
-        f"{os.environ.get('DB_HOST', 'localhost')}:"
-        f"{os.environ.get('DB_PORT', '5432')}/"
-        f"{os.environ.get('DB_NAME', 'only_db')}"
-    )
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Using Back4App for database (no PostgreSQL needed)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # csrf = CSRFProtect(app)
@@ -700,7 +682,7 @@ def shop():
         query = query.filter_by(category_id=category_id)
     
     if search:
-        # Use ilike for case-insensitive search in PostgreSQL
+        # Use ilike for case-insensitive search
         query = query.filter(Product.name.ilike(f'%{search}%'))
         
     # ✅ Apply Price Range Filters
@@ -1276,56 +1258,60 @@ def track_product_view(product_id, view_type):
 @seller_required
 def seller_dashboard():
     from datetime import datetime, timedelta
-    from sqlalchemy import func, distinct
     
     user_id = session['user_id']
 
     # Get seller statistics
     total_products = Product.query.filter_by(seller_id=user_id).count()
 
-    total_orders = (
-        db.session.query(Order)
-        .join(OrderItem)
-        .join(Product)
-        .filter(Product.seller_id == user_id)
-        .count()
-    )
-
-    # Calculate total revenue (sum of order item prices * quantity for this seller)
-    total_revenue = (
-        db.session.query(db.func.sum(OrderItem.price * OrderItem.quantity))
-        .join(Product)
-        .filter(Product.seller_id == user_id)
-        .scalar()
-    ) or 0
+    # Get all seller's products
+    seller_products = Product.query.filter_by(seller_id=user_id).all()
+    seller_product_ids = [p.id for p in seller_products]
+    
+    # Calculate total orders by checking order items
+    all_order_items = OrderItem.query.all()
+    seller_order_ids = set()
+    total_revenue = 0
+    
+    for item in all_order_items:
+        if item.product_id in seller_product_ids:
+            seller_order_ids.add(item.order_id)
+            total_revenue += float(item.price) * int(item.quantity)
+    
+    total_orders = len(seller_order_ids)
 
     # Calculate daily order performance (today vs yesterday)
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     
-    # Orders today
-    orders_today = (
-        db.session.query(Order)
-        .join(OrderItem)
-        .join(Product)
-        .filter(
-            Product.seller_id == user_id,
-            func.date(Order.created_at) == today
-        )
-        .count()
-    )
+    # Get all orders
+    all_orders = Order.query.all()
+    orders_today = 0
+    orders_yesterday = 0
+    unique_customers = set()
     
-    # Orders yesterday
-    orders_yesterday = (
-        db.session.query(Order)
-        .join(OrderItem)
-        .join(Product)
-        .filter(
-            Product.seller_id == user_id,
-            func.date(Order.created_at) == yesterday
-        )
-        .count()
-    )
+    for order in all_orders:
+        # Check if this order contains seller's products
+        order_items = OrderItem.query.filter_by(order_id=order.id).all()
+        has_seller_product = any(item.product_id in seller_product_ids for item in order_items)
+        
+        if has_seller_product:
+            unique_customers.add(order.user_id)
+            
+            # Parse created_at date
+            if hasattr(order, 'created_at') and order.created_at:
+                try:
+                    if isinstance(order.created_at, str):
+                        order_date = datetime.fromisoformat(order.created_at.replace('Z', '+00:00')).date()
+                    else:
+                        order_date = order.created_at.date()
+                    
+                    if order_date == today:
+                        orders_today += 1
+                    elif order_date == yesterday:
+                        orders_yesterday += 1
+                except:
+                    pass
     
     # Calculate percentage change
     if orders_yesterday > 0:
@@ -1337,33 +1323,18 @@ def seller_dashboard():
     daily_change_percent = abs(daily_change_percent)
 
     # Count new customers (unique customers who bought seller's products)
-    new_customers_count = (
-        db.session.query(func.count(distinct(Order.user_id)))
-        .join(OrderItem)
-        .join(Product)
-        .filter(Product.seller_id == user_id)
-        .scalar()
-    ) or 0
+    new_customers_count = len(unique_customers)
 
     # Calculate average rating based on wishlist counts
-    # Get all seller's products with their wishlist counts
-    products_wishlist_data = (
-        db.session.query(
-            Product.id,
-            func.count(Wishlist.id).label('wishlist_count')
-        )
-        .outerjoin(Wishlist, Product.id == Wishlist.product_id)
-        .filter(Product.seller_id == user_id)
-        .group_by(Product.id)
-        .all()
-    )
+    all_wishlists = Wishlist.query.all()
+    wishlist_counts = {}
     
-    if products_wishlist_data:
-        # Calculate average wishlist count as a rating (scale 1-5)
-        total_wishlist_count = sum(item.wishlist_count for item in products_wishlist_data)
-        product_count = len(products_wishlist_data)
-        avg_wishlist_per_product = total_wishlist_count / product_count if product_count > 0 else 0
-        
+    for wishlist in all_wishlists:
+        if wishlist.product_id in seller_product_ids:
+            wishlist_counts[wishlist.product_id] = wishlist_counts.get(wishlist.product_id, 0) + 1
+    
+    if wishlist_counts:
+        avg_wishlist_per_product = sum(wishlist_counts.values()) / len(seller_product_ids) if seller_product_ids else 0
         # Convert to 1-5 scale (assuming 10+ wishlists = 5 stars)
         average_rating = min(5.0, max(1.0, (avg_wishlist_per_product / 2) + 1))
         average_rating = f"{average_rating:.1f}"
@@ -1371,12 +1342,8 @@ def seller_dashboard():
         average_rating = "0.0"
 
     # Calculate total views for seller's products
-    total_views = (
-        db.session.query(func.count(ProductView.id))
-        .join(Product, ProductView.product_id == Product.id)
-        .filter(Product.seller_id == user_id)
-        .scalar()
-    ) or 0
+    all_views = ProductView.query.all()
+    total_views = sum(1 for view in all_views if view.product_id in seller_product_ids)
 
     # Recent products
     recent_products = (
@@ -1386,16 +1353,14 @@ def seller_dashboard():
         .all()
     )
 
-    # Recent orders for this seller (with proper filtering)
-    recent_orders = (
-        db.session.query(Order)
-        .join(OrderItem)
-        .join(Product)
-        .filter(Product.seller_id == user_id)
-        .order_by(Order.created_at.desc())
-        .limit(10)
-        .all()
-    )
+    # Recent orders for this seller
+    recent_orders = []
+    for order in sorted(all_orders, key=lambda x: x.created_at if hasattr(x, 'created_at') else '', reverse=True)[:50]:
+        order_items = OrderItem.query.filter_by(order_id=order.id).all()
+        if any(item.product_id in seller_product_ids for item in order_items):
+            recent_orders.append(order)
+            if len(recent_orders) >= 10:
+                break
 
     return render_template(
         'seller/dashboard.html',
@@ -1912,7 +1877,6 @@ def reorder(order_id):
 def seller_sales_trend():
     """Get sales trend data for the last 30 days"""
     from datetime import datetime, timedelta
-    from sqlalchemy import func, distinct
     
     user_id = session['user_id']
     
@@ -1920,28 +1884,52 @@ def seller_sales_trend():
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=29)  # 30 days total including today
     
-    # Query daily sales (revenue) for seller's products
-    daily_sales = (
-        db.session.query(
-            func.date(Order.created_at).label('date'),
-            func.sum(OrderItem.price * OrderItem.quantity).label('revenue'),
-            func.count(distinct(Order.id)).label('orders')
-        )
-        .join(OrderItem, Order.id == OrderItem.order_id)
-        .join(Product, OrderItem.product_id == Product.id)
-        .filter(
-            Product.seller_id == user_id,
-            func.date(Order.created_at) >= start_date,
-            func.date(Order.created_at) <= end_date,
-            Order.status.in_(['confirmed', 'processing', 'shipped', 'delivered'])  # Only successful orders
-        )
-        .group_by(func.date(Order.created_at))
-        .order_by(func.date(Order.created_at))
-        .all()
-    )
+    # Get all seller's products
+    seller_products = Product.query.filter_by(seller_id=user_id).all()
+    seller_product_ids = [p.id for p in seller_products]
     
-    # Create a complete date range with zero values for days without sales
-    sales_dict = {sale.date: {'revenue': float(sale.revenue or 0), 'orders': sale.orders} for sale in daily_sales}
+    # Get all orders and order items
+    all_orders = Order.query.all()
+    all_order_items = OrderItem.query.all()
+    
+    # Build daily sales data
+    sales_by_date = {}
+    successful_statuses = ['confirmed', 'processing', 'shipped', 'delivered']
+    
+    for order in all_orders:
+        # Check if order is in date range and has successful status
+        if not hasattr(order, 'created_at') or not order.created_at:
+            continue
+            
+        try:
+            if isinstance(order.created_at, str):
+                order_date = datetime.fromisoformat(order.created_at.replace('Z', '+00:00')).date()
+            else:
+                order_date = order.created_at.date()
+        except:
+            continue
+        
+        if order_date < start_date or order_date > end_date:
+            continue
+            
+        if order.status not in successful_statuses:
+            continue
+        
+        # Check if order has seller's products
+        order_items = [item for item in all_order_items if item.order_id == order.id]
+        seller_items = [item for item in order_items if item.product_id in seller_product_ids]
+        
+        if seller_items:
+            date_str = order_date.strftime('%Y-%m-%d')
+            if date_str not in sales_by_date:
+                sales_by_date[date_str] = {'revenue': 0, 'orders': set()}
+            
+            # Add revenue from seller's items
+            for item in seller_items:
+                sales_by_date[date_str]['revenue'] += float(item.price) * int(item.quantity)
+            
+            # Track unique orders
+            sales_by_date[date_str]['orders'].add(order.id)
     
     # Generate all dates in range
     current_date = start_date
@@ -1950,13 +1938,16 @@ def seller_sales_trend():
     orders = []
     
     while current_date <= end_date:
-        dates.append(current_date.strftime('%Y-%m-%d'))
-        if current_date in sales_dict:
-            revenues.append(sales_dict[current_date]['revenue'])
-            orders.append(sales_dict[current_date]['orders'])
+        date_str = current_date.strftime('%Y-%m-%d')
+        dates.append(date_str)
+        
+        if date_str in sales_by_date:
+            revenues.append(sales_by_date[date_str]['revenue'])
+            orders.append(len(sales_by_date[date_str]['orders']))
         else:
             revenues.append(0)
             orders.append(0)
+        
         current_date += timedelta(days=1)
     
     # Calculate some summary statistics
@@ -1993,40 +1984,73 @@ def seller_orders():
     """Get all orders for seller's products"""
     user_id = session['user_id']
     
-    # Get orders that contain seller's products
-    orders = (
-        db.session.query(Order)
-        .join(OrderItem)
-        .join(Product)
-        .filter(Product.seller_id == user_id)
-        .order_by(Order.created_at.desc())
-        .all()
+    # Get all seller's products
+    seller_products = Product.query.filter_by(seller_id=user_id).all()
+    seller_product_ids = [p.id for p in seller_products]
+    
+    # Get all orders and order items
+    all_orders = Order.query.all()
+    all_order_items = OrderItem.query.all()
+    
+    # Build orders data
+    orders_data = []
+    processed_orders = set()
+    
+    # Sort orders by created_at (newest first)
+    sorted_orders = sorted(
+        all_orders, 
+        key=lambda x: x.created_at if hasattr(x, 'created_at') and x.created_at else '', 
+        reverse=True
     )
     
-    orders_data = []
-    for order in orders:
-        # Get only the items from this seller
-        seller_items = [
-            item for item in order.order_items 
-            if item.product.seller_id == user_id
-        ]
+    for order in sorted_orders:
+        if order.id in processed_orders:
+            continue
         
-        if seller_items:  # Only include orders with seller's products
+        # Get order items for this order
+        order_items = [item for item in all_order_items if item.order_id == order.id]
+        
+        # Filter to only seller's items
+        seller_items = [item for item in order_items if item.product_id in seller_product_ids]
+        
+        if seller_items:
+            processed_orders.add(order.id)
+            
+            # Get customer info
+            customer = User.query.get(order.user_id) if hasattr(order, 'user_id') and order.user_id else None
+            
+            # Format created_at
+            try:
+                if isinstance(order.created_at, str):
+                    created_at_dt = datetime.fromisoformat(order.created_at.replace('Z', '+00:00'))
+                    created_at_str = created_at_dt.strftime('%Y-%m-%d %H:%M')
+                else:
+                    created_at_str = order.created_at.strftime('%Y-%m-%d %H:%M')
+            except:
+                created_at_str = str(order.created_at) if hasattr(order, 'created_at') else 'N/A'
+            
+            # Build items data
+            items_data = []
+            for item in seller_items:
+                product = Product.query.get(item.product_id)
+                if product:
+                    items_data.append({
+                        'id': item.id,
+                        'product_name': product.name,
+                        'product_image': product.image_url if hasattr(product, 'image_url') else None,
+                        'quantity': item.quantity,
+                        'price': float(item.price)
+                    })
+            
             orders_data.append({
                 'id': order.id,
-                'order_number': order.order_number,
-                'customer_name': order.user.username,
-                'customer_email': order.user.email,
-                'status': order.status,
-                'created_at': order.created_at.strftime('%Y-%m-%d %H:%M'),
+                'order_number': order.order_number if hasattr(order, 'order_number') else f'ORD-{order.id}',
+                'customer_name': customer.username if customer else 'Unknown',
+                'customer_email': customer.email if customer else 'N/A',
+                'status': order.status if hasattr(order, 'status') else 'pending',
+                'created_at': created_at_str,
                 'total_amount': float(sum(item.price * item.quantity for item in seller_items)),
-                'items': [{
-                    'id': item.id,
-                    'product_name': item.product.name,
-                    'product_image': item.product.image_url,
-                    'quantity': item.quantity,
-                    'price': float(item.price)
-                } for item in seller_items]
+                'items': items_data
             })
     
     return jsonify({'orders': orders_data})

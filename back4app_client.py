@@ -67,7 +67,7 @@ class Back4AppClient:
         response.raise_for_status()
         return response.json()
 
-    def query(self, class_name, where=None, order=None, limit=None, skip=None, include=None):
+    def query(self, class_name, where=None, order=None, limit=None, skip=None, include=None, count=None):
         """Queries objects from a class."""
         url = self._get_url(f'classes/{class_name}')
         params = {}
@@ -81,6 +81,8 @@ class Back4AppClient:
             params['skip'] = skip
         if include:
             params['include'] = include
+        if count is not None:
+            params['count'] = count
             
         response = requests.get(url, headers=self.headers, params=params)
         response.raise_for_status()

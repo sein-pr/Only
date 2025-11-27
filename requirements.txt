@@ -1,12 +1,11 @@
 Flask
-Flask-SQLAlchemy
 Flask-WTF
 Flask-Mail
 Werkzeug
 stripe
 email-validator
 python-dotenv
-psycopg2-binary
 gunicorn
-est
+requests
+pytest
 hypothesis
