@@ -78,6 +78,7 @@ import uuid
 from flask_mail import Mail, Message
 import stripe
 from decimal import Decimal
+from imgbb_uploader import ImgBBUploader
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -1452,42 +1453,55 @@ def add_product():
     form.category_id.choices = [(c.id, c.name) for c in Category.query.all()]
     
     if form.validate_on_submit():
-        # Handle main image upload
-        image_url = None
-        if form.image.data:
-            filename = secure_filename(form.image.data.filename)
-            if filename:
-                filename = f"{uuid.uuid4()}_{filename}"
-                form.image.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                image_url = f"/static/uploads/{filename}"
-        
-        # Handle additional images upload
-        additional_images = []
-        additional_images_files = request.files.getlist('additional_images')
-        for img_file in additional_images_files:
-            if img_file and img_file.filename:
-                filename = secure_filename(img_file.filename)
-                if filename:
-                    filename = f"{uuid.uuid4()}_{filename}"
-                    img_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    additional_images.append(f"/static/uploads/{filename}")
-        
-        product = Product(
-            name=form.name.data,
-            description=form.description.data,
-            price=form.price.data,
-            stock_quantity=form.stock_quantity.data,
-            category_id=form.category_id.data,
-            seller_id=session['user_id'],
-            image_url=image_url,
-            additional_images=additional_images if additional_images else None,
-            status='active'  # Set default status to active
-        )
-        
-        db.session.add(product)
-        db.session.commit()
-        
-        flash('Product added successfully!', 'success')
+        try:
+            uploader = ImgBBUploader()
+            
+            # Handle main image upload to ImgBB
+            image_url = None
+            if form.image.data:
+                try:
+                    result = uploader.upload_file(form.image.data, name=f"product_{uuid.uuid4()}")
+                    image_url = uploader.get_display_url(result)
+                    logger.info(f"Main image uploaded to ImgBB: {image_url}")
+                except Exception as e:
+                    logger.error(f"Failed to upload main image to ImgBB: {e}")
+                    flash(f'Failed to upload main image: {str(e)}', 'error')
+                    return render_template('seller/add_product.html', form=form)
+            
+            # Handle additional images upload to ImgBB
+            additional_images = []
+            additional_images_files = request.files.getlist('additional_images')
+            for img_file in additional_images_files:
+                if img_file and img_file.filename:
+                    try:
+                        result = uploader.upload_file(img_file, name=f"product_additional_{uuid.uuid4()}")
+                        img_url = uploader.get_display_url(result)
+                        additional_images.append(img_url)
+                        logger.info(f"Additional image uploaded to ImgBB: {img_url}")
+                    except Exception as e:
+                        logger.warning(f"Failed to upload additional image: {e}")
+                        # Continue with other images
+            
+            product = Product(
+                name=form.name.data,
+                description=form.description.data,
+                price=form.price.data,
+                stock_quantity=form.stock_quantity.data,
+                category_id=form.category_id.data,
+                seller_id=session['user_id'],
+                image_url=image_url,
+                additional_images=additional_images if additional_images else None,
+                status='active'  # Set default status to active
+            )
+            
+            db.session.add(product)
+            db.session.commit()
+            
+            flash('Product added successfully with images hosted on ImgBB!', 'success')
+        except Exception as e:
+            logger.error(f"Error adding product: {e}")
+            flash(f'Error adding product: {str(e)}', 'error')
+            return render_template('seller/add_product.html', form=form)
         return redirect(url_for('seller_products'))
     
     return render_template('seller/add_product.html', form=form)

@@ -1,0 +1,70 @@
+API version 1
+Imgbb's API v1 allows you to upload images.
+
+35e55013719800f91839e88a46503191
+
+
+Request method
+API v1 calls can be made using the POST or GET request methods, but since GET requests are limited by the maximum allowed URL length, you should prefer the POST method.
+
+Image Upload
+https://api.imgbb.com/1/upload
+
+Parameters
+key (required)
+The API key.
+image (required)
+A binary file, base64 data, or an image URL (up to 32 MB).
+name (optional)
+The name of the file; this is automatically detected if you upload a file using POST and multipart/form-data.
+expiration (optional)
+Enable this if you want uploads to be automatically deleted after a certain time (in seconds, 60-15552000).
+Example call
+curl --location --request POST "https://api.imgbb.com/1/upload?expiration=600&key=YOUR_CLIENT_API_KEY" --form "image=R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+Note: Always use POST when uploading local files. URL encoding may alter the base64 source due to encoded characters or simply because of the URL length limit when using GET.
+
+API response
+API v1 responses display all uploaded image information in JSON format.
+
+In the JSON response, the headers will include status codes to let you easily determine whether the request was OK. It will also include the status property.
+
+Example response (JSON)
+{
+	"data": {
+		"id": "2ndCYJK",
+		"title": "c1f64245afb2",
+		"url_viewer": "https://ibb.co/2ndCYJK",
+		"url": "https://i.ibb.co/w04Prt6/c1f64245afb2.gif",
+		"display_url": "https://i.ibb.co/98W13PY/c1f64245afb2.gif",
+		"width":"1",
+		"height":"1",
+		"size": "42",
+		"time": "1552042565",
+		"expiration":"0",
+		"image": {
+			"filename": "c1f64245afb2.gif",
+			"name": "c1f64245afb2",
+			"mime": "image/gif",
+			"extension": "gif",
+			"url": "https://i.ibb.co/w04Prt6/c1f64245afb2.gif",
+		},
+		"thumb": {
+			"filename": "c1f64245afb2.gif",
+			"name": "c1f64245afb2",
+			"mime": "image/gif",
+			"extension": "gif",
+			"url": "https://i.ibb.co/2ndCYJK/c1f64245afb2.gif",
+		},
+		"medium": {
+			"filename": "c1f64245afb2.gif",
+			"name": "c1f64245afb2",
+			"mime": "image/gif",
+			"extension": "gif",
+			"url": "https://i.ibb.co/98W13PY/c1f64245afb2.gif",
+		},
+		"delete_url": "https://ibb.co/2ndCYJK/670a7e48ddcb85ac340c717a41047e5c"
+	},
+	"success": true,
+	"status": 200
+}
