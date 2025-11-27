@@ -1,26 +1,84 @@
+# Load environment variables FIRST before any other imports that depend on them
+from dotenv import load_dotenv
+import os
+import logging
+
+# Configure basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
+# If .env file is missing, the application will continue using system environment variables
+try:
+    if load_dotenv():
+        logger.info("Environment variables loaded from .env file")
+    else:
+        logger.info("No .env file found, using system environment variables")
+except Exception as e:
+    logger.warning(f"Failed to load .env file: {e}. Using system environment variables.")
+
+# Validate required environment variables
+def validate_environment_variables():
+    """Validate that required environment variables are present."""
+    required_vars = {
+        'BACK4APP_APP_ID': 'Back4App Application ID',
+        'SECRET_KEY': 'Flask secret key for session management'
+    }
+    
+    # Check for at least one Back4App authentication key
+    auth_keys = ['BACK4APP_MASTER_KEY', 'BACK4APP_CLIENT_KEY']
+    has_auth_key = any(os.environ.get(key) for key in auth_keys)
+    
+    missing_vars = []
+    for var, description in required_vars.items():
+        if not os.environ.get(var):
+            missing_vars.append(f"  - {var}: {description}")
+    
+    if not has_auth_key:
+        missing_vars.append(f"  - BACK4APP_MASTER_KEY or BACK4APP_CLIENT_KEY: Back4App authentication")
+    
+    if missing_vars:
+        error_msg = (
+            "Missing required environment variables:\n" +
+            "\n".join(missing_vars) +
+            "\n\nPlease ensure these variables are set in your .env file or system environment."
+        )
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    # Log warnings for optional but recommended variables
+    optional_vars = {
+        'MAIL_USERNAME': 'Email configuration for password reset',
+        'MAIL_PASSWORD': 'Email configuration for password reset',
+        'STRIPE_SECRET_KEY': 'Stripe payment processing'
+    }
+    
+    for var, description in optional_vars.items():
+        if not os.environ.get(var):
+            logger.warning(f"Optional environment variable {var} not set: {description}")
+    
+    logger.info("Environment variable validation completed successfully")
+
+# Validate environment variables before importing modules that depend on them
+validate_environment_variables()
+
+# Now import modules that depend on environment variables
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-# from flask_wtf.csrf import exempt
 from wtforms import StringField, PasswordField, TextAreaField, DecimalField, IntegerField, SelectField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange
-from models.models import db, User, Category, Product, Order, OrderItem, CartItem, Wishlist, ProductView, PasswordResetToken
+from models_b4a import db, User, Category, Product, Order, OrderItem, CartItem, Wishlist, ProductView, PasswordResetToken
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from forms.profile_forms import ProfileForm
 from forms.password_reset_forms import ForgotPasswordForm, ResetPasswordForm
-import os
 import uuid
 from flask_mail import Mail, Message
 import stripe
 from decimal import Decimal
-import logging
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -82,7 +140,7 @@ class ProductForm(FlaskForm):
     description = TextAreaField('Description')
     price = DecimalField('Price', validators=[DataRequired(), NumberRange(min=0.01)])
     stock_quantity = IntegerField('Stock Quantity', validators=[DataRequired(), NumberRange(min=0)])
-    category_id = SelectField('Category', coerce=int, validators=[DataRequired()])
+    category_id = SelectField('Category', coerce=str, validators=[DataRequired()])
     image = FileField('Product Image')
     additional_images = FileField('Additional Images')
 
@@ -615,7 +673,7 @@ from decimal import Decimal # Ensure this import is present at the top of the fi
 @app.route('/shop')
 def shop():
     page = request.args.get('page', 1, type=int)
-    category_id = request.args.get('category', type=int)
+    category_id = request.args.get('category', type=str)
     search = request.args.get('search', '')
     sort_by = request.args.get('sort_by', 'newest')  # Default sort is 'newest'
     
@@ -688,7 +746,7 @@ def shop():
                           sort_by=sort_by,          # Pass sort option back to template
                           user_wishlist=user_wishlist)
 
-@app.route('/product/<int:product_id>')
+@app.route('/product/<product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
     
@@ -769,7 +827,7 @@ def cart():
         remaining_for_free_shipping=remaining_for_free_shipping
     )
 
-@app.route('/add-to-cart/<int:product_id>', methods=['POST'])
+@app.route('/add-to-cart/<product_id>', methods=['POST'])
 # @csrf.exempt
 def add_to_cart(product_id):
     product = Product.query.get_or_404(product_id)
@@ -2174,4 +2232,4 @@ if __name__ == '__main__':
         
         print("Database tables created successfully!")
     
-app.run(port="5002",debug=True)
+        app.run(port="5002",debug=True)
