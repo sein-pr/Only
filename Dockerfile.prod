@@ -9,7 +9,6 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
-        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -32,7 +31,6 @@ ENV FLASK_ENV=production
 # Install runtime dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        postgresql-client \
         curl \
     && rm -rf /var/lib/apt/lists/*
 

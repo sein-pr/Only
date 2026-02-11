@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopy E-commerce Project - Comprehensive Code Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .document {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #ea580c;
+            font-size: 2.8em;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 4px solid #ea580c;
+            padding-bottom: 20px;
+        }
+        
+        h2 {
+            color: #f97316;
+            font-size: 2em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 6px solid #f97316;
+            padding-left: 20px;
+            background-color: #fff7ed;
+            padding: 15px 20px;
+            border-radius: 5px;
+        }
+        
+        h3 {
+            color: #fb923c;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #fb923c;
+            padding-bottom: 8px;
+        }
+        
+        h4 {
+            color: #fdba74;
+            font-size: 1.2em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-bottom: 20px;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        strong {
+            color: #ea580c;
+            font-weight: 600;
+        }
+        
+        /* Code Syntax Highlighting */
+        .code-block {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .code-header {
+            background-color: #2d2d2d;
+            color: #fff;
+            padding: 10px 15px;
+            margin: -20px -20px 15px -20px;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .python-keyword { color: #569cd6; font-weight: bold; }
+        .python-string { color: #ce9178; }
+        .python-comment { color: #6a9955; font-style: italic; }
+        .python-function { color: #dcdcaa; }
+        .python-class { color: #4ec9b0; }
+        .python-import { color: #c586c0; }
+        .python-number { color: #b5cea8; }
+        .python-operator { color: #d4d4d4; }
+        
+        .sql-keyword { color: #569cd6; font-weight: bold; }
+        .sql-string { color: #ce9178; }
+        .sql-comment { color: #6a9955; font-style: italic; }
+        .sql-function { color: #dcdcaa; }
+        .sql-table { color: #4ec9b0; }
+        
+        .html-tag { color: #569cd6; }
+        .html-attribute { color: #92c5f7; }
+        .html-string { color: #ce9178; }
+        .html-comment { color: #6a9955; font-style: italic; }
+        
+        .inline-code {
+            background-color: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            color: #d63384;
+            font-size: 0.9em;
+        }
+        
+        .highlight-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 5px solid #ffc107;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .warning-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            border-left: 5px solid #dc3545;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .feature-item {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ea580c;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .tech-item {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+        }
+        
+        .line-numbers {
+            color: #666;
+            margin-right: 15px;
+            user-select: none;
+        }
+        
+        .code-explanation {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .endpoint-list {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .endpoint-item {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .method {
+            background-color: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .method.post { background-color: #007bff; }
+        .method.delete { background-color: #dc3545; }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 3px solid #ea580c;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <h1>🛍️ Shopy E-commerce Project</h1>
+        <p style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 40px;">
+            <em>Comprehensive Code Documentation with Implementation Details</em>
+        </p>
+
+        <h2>📋 Project Overview</h2>
+        <p>
+            Shopy (formerly "Only") is a full-featured e-commerce web application built with Flask (Python web framework). 
+            It provides a complete online shopping experience with user authentication, product management, shopping cart, 
+            payment processing, and seller dashboard functionality.
+        </p>
+
+        <div class="info-box">
+            <strong>🎯 Architecture:</strong> The application follows a modular MVC (Model-View-Controller) pattern with 
+            clear separation of concerns. Models handle data persistence, Views manage user interface, and Controllers 
+            (routes) handle business logic and request processing.
+        </div>
+
+        <h2>🛠️ Technology Stack</h2>
+        <div class="tech-stack">
+            <span class="tech-item">Python 3.11</span>
+            <span class="tech-item">Flask 2.3.3</span>
+            <span class="tech-item">PostgreSQL 15</span>
+            <span class="tech-item">SQLAlchemy</span>
+            <span class="tech-item">Bootstrap 5.3</span>
+            <span class="tech-item">Stripe API</span>
+            <span class="tech-item">Docker</span>
+            <span class="tech-item">Nginx</span>
+        </div>
+
+        <h2>🏗️ Main Application File: app.py</h2>
+
+        <h3>Configuration & Setup</h3>
+        <p>The application uses environment variables for configuration management and supports both local and production deployments.</p>
+
+        <div class="code-block">
+            <div class="code-header">app.py - Configuration Setup (Lines 1-68)</div>
+<span class="python-import">from</span> <span class="python-string">flask</span> <span class="python-import">import</span> Flask, render_template, request, redirect, url_for, session, flash, jsonify
+<span class="python-import">from</span> <span class="python-string">flask_sqlalchemy</span> <span class="python-import">import</span> SQLAlchemy
+<span class="python-import">from</span> <span class="python-string">models.models</span> <span class="python-import">import</span> db, User, Category, Product, Order, OrderItem, CartItem, Wishlist
+<span class="python-import">from</span> <span class="python-string">werkzeug.security</span> <span class="python-import">import</span> generate_password_hash, check_password_hash
+<span class="python-import">import</span> <span class="python-string">os</span>
+<span class="python-import">from</span> <span class="python-string">dotenv</span> <span class="python-import">import</span> load_dotenv
+
+<span class="python-comment"># Load environment variables</span>
+load_dotenv()
+
+app = Flask(__name__)
+app.config[<span class="python-string">'SECRET_KEY'</span>] = os.environ.get(<span class="python-string">'SECRET_KEY'</span>, <span class="python-string">'your-secret-key-here'</span>)
+
+<span class="python-comment"># PostgreSQL Configuration</span>
+DATABASE_URL = os.environ.get(<span class="python-string">'DATABASE_URL'</span>)
+<span class="python-keyword">if</span> DATABASE_URL:
+    <span class="python-comment"># Handle Heroku postgres URL format</span>
+    <span class="python-keyword">if</span> DATABASE_URL.startswith(<span class="python-string">'postgres://'</span>):
+        DATABASE_URL = DATABASE_URL.replace(<span class="python-string">'postgres://'</span>, <span class="python-string">'postgresql://'</span>, <span class="python-number">1</span>)
+    app.config[<span class="python-string">'SQLALCHEMY_DATABASE_URI'</span>] = DATABASE_URL
+<span class="python-keyword">else</span>:
+    <span class="python-comment"># Local development PostgreSQL</span>
+    app.config[<span class="python-string">'SQLALCHEMY_DATABASE_URI'</span>] = (
+        <span class="python-string">f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"</span>
+        <span class="python-string">f"{os.environ.get('DB_PASSWORD', 'password')}@"</span>
+        <span class="python-string">f"{os.environ.get('DB_HOST', 'localhost')}:"</span>
+        <span class="python-string">f"{os.environ.get('DB_PORT', '5432')}/"</span>
+        <span class="python-string">f"{os.environ.get('DB_NAME', 'only_db')}"</span>
+    )
+
+<span class="python-comment"># Stripe Configuration</span>
+stripe.api_key = os.environ.get(<span class="python-string">'STRIPE_SECRET_KEY'</span>)
+app.config[<span class="python-string">'STRIPE_PUBLISHABLE_KEY'</span>] = os.environ.get(<span class="python-string">'STRIPE_PUBLISHABLE_KEY'</span>)
+</div>
+
+        <div class="code-explanation">
+            <strong>Key Features:</strong>
+            <ul>
+                <li><strong>Environment Variables:</strong> Uses python-dotenv to load configuration from .env file</li>
+                <li><strong>Database Configuration:</strong> Supports both local PostgreSQL and Heroku PostgreSQL</li>
+                <li><strong>Stripe Integration:</strong> Payment processing API keys configuration</li>
+                <li><strong>Security:</strong> Secret key management for session security</li>
+            </ul>
+        </div>
+
+        <h2>🗄️ Database Models (models/models.py)</h2>
+
+        <h3>User Model</h3>
+        <p>The User model handles both buyers and sellers with comprehensive profile information and company details for sellers.</p>
+
+        <div class="code-block">
+            <div class="code-header">models/models.py - User Model (Lines 7-49)</div>
+<span class="python-keyword">class</span> <span class="python-class">User</span>(db.Model):
+    id = db.Column(db.Integer, primary_key=<span class="python-keyword">True</span>)
+    username = db.Column(db.String(<span class="python-number">80</span>), unique=<span class="python-keyword">True</span>, nullable=<span class="python-keyword">False</span>)
+    email = db.Column(db.String(<span class="python-number">120</span>), unique=<span class="python-keyword">True</span>, nullable=<span class="python-keyword">False</span>)
+    password_hash = db.Column(db.String(<span class="python-number">120</span>), nullable=<span class="python-keyword">False</span>)
+    role = db.Column(db.String(<span class="python-number">20</span>), default=<span class="python-string">'buyer'</span>)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    <span class="python-comment"># Profile fields</span>
+    first_name = db.Column(db.String(<span class="python-number">50</span>))
+    last_name = db.Column(db.String(<span class="python-number">50</span>))
+    phone = db.Column(db.String(<span class="python-number">20</span>))  <span class="python-comment"># Keep for backward compatibility</span>
+    phone_country_code = db.Column(db.String(<span class="python-number">5</span>))  <span class="python-comment"># e.g., +1, +44, +91</span>
+    phone_number = db.Column(db.String(<span class="python-number">15</span>))  <span class="python-comment"># The actual phone number</span>
+    address = db.Column(db.Text)  <span class="python-comment"># Keep for backward compatibility</span>
+    address_line1 = db.Column(db.String(<span class="python-number">100</span>))
+    address_line2 = db.Column(db.String(<span class="python-number">100</span>))
+    city = db.Column(db.String(<span class="python-number">50</span>))
+    state_province = db.Column(db.String(<span class="python-number">50</span>))
+    postal_code = db.Column(db.String(<span class="python-number">20</span>))
+    country = db.Column(db.String(<span class="python-number">50</span>))
+    avatar_url = db.Column(db.String(<span class="python-number">200</span>))
+    
+    <span class="python-comment"># Company/Business fields (mainly for sellers)</span>
+    company_name = db.Column(db.String(<span class="python-number">100</span>))
+    company_description = db.Column(db.Text)
+    company_logo_url = db.Column(db.String(<span class="python-number">200</span>))
+    company_website = db.Column(db.String(<span class="python-number">200</span>))
+    
+    <span class="python-comment"># Relationships</span>
+    orders = db.relationship(<span class="python-string">'Order'</span>, backref=<span class="python-string">'user'</span>, lazy=<span class="python-keyword">True</span>)
+    products = db.relationship(<span class="python-string">'Product'</span>, backref=<span class="python-string">'seller'</span>, lazy=<span class="python-keyword">True</span>)
+</div>
+
+        <div class="code-explanation">
+            <strong>User Model Features:</strong>
+            <ul>
+                <li><strong>Dual Role Support:</strong> Handles both buyers and sellers in a single model</li>
+                <li><strong>Structured Address:</strong> Separate fields for address components</li>
+                <li><strong>Company Information:</strong> Additional fields for seller business details</li>
+                <li><strong>Backward Compatibility:</strong> Legacy fields maintained for data migration</li>
+            </ul>
+        </div>
+
+        <h3>Product Model</h3>
+        <p>The Product model manages inventory with advanced features like multiple images and status management.</p>
+
+        <div class="code-block">
+            <div class="code-header">models/models.py - Product Model (Lines 60-77)</div>
+<span class="python-keyword">class</span> <span class="python-class">Product</span>(db.Model):
+    id = db.Column(db.Integer, primary_key=<span class="python-keyword">True</span>)
+    name = db.Column(db.String(<span class="python-number">200</span>), nullable=<span class="python-keyword">False</span>)
+    description = db.Column(db.Text)
+    price = db.Column(db.Numeric(<span class="python-number">10</span>, <span class="python-number">2</span>), nullable=<span class="python-keyword">False</span>)
+    stock_quantity = db.Column(db.Integer, default=<span class="python-number">0</span>)
+    image_url = db.Column(db.String(<span class="python-number">200</span>))
+    additional_images = db.Column(db.JSON)  <span class="python-comment"># Store array of additional image URLs</span>
+    status = db.Column(db.String(<span class="python-number">20</span>), default=<span class="python-string">'active'</span>)  <span class="python-comment"># active, inactive</span>
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    <span class="python-comment"># Foreign Keys</span>
+    category_id = db.Column(db.Integer, db.ForeignKey(<span class="python-string">'category.id'</span>), nullable=<span class="python-keyword">False</span>)
+    seller_id = db.Column(db.Integer, db.ForeignKey(<span class="python-string">'user.id'</span>), nullable=<span class="python-keyword">False</span>)
+
+    <span class="python-comment"># Relationships</span>
+    order_items = db.relationship(<span class="python-string">'OrderItem'</span>, backref=<span class="python-string">'product'</span>, lazy=<span class="python-keyword">True</span>)
+</div>
+
+        <h3>Cart Management Model</h3>
+        <p>The CartItem model handles both guest and authenticated user shopping carts with advanced features.</p>
+
+        <div class="code-block">
+            <div class="code-header">models/models.py - CartItem Model (Lines 103-112)</div>
+<span class="python-keyword">class</span> <span class="python-class">CartItem</span>(db.Model):
+    id = db.Column(db.Integer, primary_key=<span class="python-keyword">True</span>)
+    session_id = db.Column(db.String(<span class="python-number">100</span>), nullable=<span class="python-keyword">False</span>)
+    product_id = db.Column(db.Integer, db.ForeignKey(<span class="python-string">'product.id'</span>), nullable=<span class="python-keyword">False</span>)
+    quantity = db.Column(db.Integer, default=<span class="python-number">1</span>)
+    save_for_later = db.Column(db.Boolean, default=<span class="python-keyword">False</span>)  <span class="python-comment"># New field for save for later</span>
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    <span class="python-comment"># Relationships</span>
+    product = db.relationship(<span class="python-string">'Product'</span>, backref=<span class="python-string">'cart_items'</span>)
+</div>
+
+        <div class="code-explanation">
+            <strong>Cart Features:</strong>
+            <ul>
+                <li><strong>Session-based:</strong> Works for both guests and logged-in users</li>
+                <li><strong>Save for Later:</strong> Items can be saved without purchasing</li>
+                <li><strong>Quantity Management:</strong> Tracks item quantities in cart</li>
+            </ul>
+        </div>
+
+        <h2>🔐 Authentication System</h2>
+
+        <h3>Login Route Implementation</h3>
+        <p>The login system includes password verification, session management, and cart transfer functionality.</p>
+
+        <div class="code-block">
+            <div class="code-header">app.py - Login Route (Lines 143-185)</div>
+<span class="python-keyword">@app.route</span>(<span class="python-string">'/login'</span>, methods=[<span class="python-string">'GET'</span>, <span class="python-string">'POST'</span>])
+<span class="python-keyword">def</span> <span class="python-function">login</span>():
+    form = LoginForm()
+    <span class="python-keyword">if</span> form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        <span class="python-keyword">if</span> user <span class="python-keyword">and</span> check_password_hash(user.password_hash, form.password.data):
+            session[<span class="python-string">'user_id'</span>] = user.id
+            session[<span class="python-string">'username'</span>] = user.username
+            session[<span class="python-string">'user_role'</span>] = user.role
+            
+            <span class="python-comment"># Transfer guest cart to user if exists</span>
+            <span class="python-keyword">if</span> <span class="python-string">'session_id'</span> <span class="python-keyword">in</span> session:
+                guest_cart_items = CartItem.query.filter_by(session_id=session[<span class="python-string">'session_id'</span>]).all()
+                <span class="python-keyword">for</span> item <span class="python-keyword">in</span> guest_cart_items:
+                    <span class="python-comment"># Check if user already has this product in cart</span>
+                    existing_item = CartItem.query.filter_by(
+                        session_id=<span class="python-string">f"user_{user.id}"</span>,
+                        product_id=item.product_id
+                    ).first()
+                    
+                    <span class="python-keyword">if</span> existing_item:
+                        existing_item.quantity += item.quantity
+                    <span class="python-keyword">else</span>:
+                        item.session_id = <span class="python-string">f"user_{user.id}"</span>
+                    
+                    db.session.delete(item) <span class="python-keyword">if</span> existing_item <span class="python-keyword">else</span> <span class="python-keyword">None</span>
+                
+                db.session.commit()
+                session[<span class="python-string">'session_id'</span>] = <span class="python-string">f"user_{user.id}"</span>
+            <span class="python-keyword">else</span>:
+                session[<span class="python-string">'session_id'</span>] = <span class="python-string">f"user_{user.id}"</span>
+            
+            <span class="python-comment"># Redirect based on user role</span>
+            <span class="python-keyword">if</span> user.role == <span class="python-string">'seller'</span>:
+                <span class="python-keyword">return</span> redirect(url_for(<span class="python-string">'seller_dashboard'</span>))
+            <span class="python-keyword">else</span>:
+                <span class="python-keyword">return</span> redirect(url_for(<span class="python-string">'home'</span>))
+        <span class="python-keyword">else</span>:
+            flash(<span class="python-string">'Invalid email or password.'</span>, <span class="python-string">'error'</span>)
+    
+    <span class="python-keyword">return</span> render_template(<span class="python-string">'auth/login.html'</span>, form=form)
+</div>
+
+        <div class="code-explanation">
+            <strong>Login Features:</strong>
+            <ul>
+                <li><strong>Password Verification:</strong> Uses Werkzeug's check_password_hash for security</li>
+                <li><strong>Session Management:</strong> Stores user_id, username, role in session</li>
+                <li><strong>Cart Transfer:</strong> Merges guest cart with user cart upon login</li>
+                <li><strong>Role-based Redirect:</strong> Sellers go to dashboard, buyers to home</li>
+            </ul>
+        </div>
+
+        <h2>🛒 Shopping Cart System</h2>
+
+        <h3>Add to Cart API Endpoint</h3>
+        <p>AJAX-enabled cart addition with stock validation and error handling.</p>
+
+        <div class="code-block">
+            <div class="code-header">app.py - Add to Cart API (Lines 865-929)</div>
+<span class="python-keyword">@app.route</span>(<span class="python-string">'/api/add-to-cart/&lt;int:product_id&gt;'</span>, methods=[<span class="python-string">'POST'</span>])
+<span class="python-keyword">def</span> <span class="python-function">api_add_to_cart</span>(product_id):
+    <span class="python-keyword">try</span>:
+        product = Product.query.get_or_404(product_id)
+        
+        <span class="python-comment"># Check if product is inactive</span>
+        <span class="python-keyword">if</span> product.status == <span class="python-string">'inactive'</span>:
+            <span class="python-keyword">return</span> jsonify({
+                <span class="python-string">'success'</span>: <span class="python-keyword">False</span>,
+                <span class="python-string">'message'</span>: <span class="python-string">'This product is no longer available.'</span>
+            }), <span class="python-number">400</span>
+        
+        <span class="python-comment"># Prevent sellers from buying their own products</span>
+        <span class="python-keyword">if</span> <span class="python-string">'user_id'</span> <span class="python-keyword">in</span> session <span class="python-keyword">and</span> product.seller_id == session[<span class="python-string">'user_id'</span>]:
+            <span class="python-keyword">return</span> jsonify({
+                <span class="python-string">'success'</span>: <span class="python-keyword">False</span>,
+                <span class="python-string">'message'</span>: <span class="python-string">'You cannot buy your own products!'</span>
+            }), <span class="python-number">400</span>
+        
+        quantity = <span class="python-function">int</span>(request.json.get(<span class="python-string">'quantity'</span>, <span class="python-number">1</span>))
+        session_id = <span class="python-function">get_session_id</span>()
+        
+        <span class="python-comment"># Check stock availability</span>
+        <span class="python-keyword">if</span> product.stock_quantity < quantity:
+            <span class="python-keyword">return</span> jsonify({
+                <span class="python-string">'success'</span>: <span class="python-keyword">False</span>,
+                <span class="python-string">'message'</span>: <span class="python-string">'Not enough stock available'</span>
+            }), <span class="python-number">400</span>
+        
+        <span class="python-comment"># Check if item already in cart</span>
+        cart_item = CartItem.query.filter_by(
+            session_id=session_id,
+            product_id=product_id
+        ).first()
+        
+        <span class="python-keyword">if</span> cart_item:
+            new_quantity = cart_item.quantity + quantity
+            <span class="python-keyword">if</span> product.stock_quantity < new_quantity:
+                <span class="python-keyword">return</span> jsonify({
+                    <span class="python-string">'success'</span>: <span class="python-keyword">False</span>,
+                    <span class="python-string">'message'</span>: <span class="python-string">'Not enough stock available'</span>
+                }), <span class="python-number">400</span>
+            cart_item.quantity = new_quantity
+        <span class="python-keyword">else</span>:
+            cart_item = CartItem(
+                session_id=session_id,
+                product_id=product_id,
+                quantity=quantity
+            )
+            db.session.add(cart_item)
+        
+        db.session.commit()
+        
+        <span class="python-keyword">return</span> jsonify({
+            <span class="python-string">'success'</span>: <span class="python-keyword">True</span>,
+            <span class="python-string">'message'</span>: <span class="python-string">f'{product.name} added to cart!'</span>,
+            <span class="python-string">'cart_count'</span>: <span class="python-function">get_cart_count</span>()
+        })
+        
+    <span class="python-keyword">except</span> <span class="python-class">Exception</span> <span class="python-keyword">as</span> e:
+        <span class="python-keyword">return</span> jsonify({
+            <span class="python-string">'success'</span>: <span class="python-keyword">False</span>,
+            <span class="python-string">'message'</span>: <span class="python-string">'An error occurred while adding to cart'</span>
+        }), <span class="python-number">500</span>
+</div>
+
+        <h2>💳 Payment Processing</h2>
+
+        <h3>Stripe Payment Intent Creation</h3>
+        <p>Secure payment processing with tax and shipping calculations.</p>
+
+        <div class="code-block">
+            <div class="code-header">app.py - Stripe Payment Intent (Lines 1588-1648)</div>
+<span class="python-keyword">@app.route</span>(<span class="python-string">'/create-payment-intent'</span>, methods=[<span class="python-string">'POST'</span>])
+<span class="python-keyword">@login_required</span>
+<span class="python-keyword">def</span> <span class="python-function">create_payment_intent</span>():
+    <span class="python-keyword">try</span>:
+        session_id = <span class="python-function">get_session_id</span>()
+        cart_items = CartItem.query.filter_by(session_id=session_id).all()
+        
+        <span class="python-comment"># Only include items that are NOT saved for later</span>
+        active_cart_items = [item <span class="python-keyword">for</span> item <span class="python-keyword">in</span> cart_items <span class="python-keyword">if</span> <span class="python-keyword">not</span> item.save_for_later]
+        
+        <span class="python-keyword">if</span> <span class="python-keyword">not</span> active_cart_items:
+            <span class="python-keyword">return</span> jsonify({<span class="python-string">'error'</span>: <span class="python-string">'No items selected for purchase'</span>}), <span class="python-number">400</span>
+        
+        <span class="python-comment"># Calculate total for active items only</span>
+        subtotal = <span class="python-function">sum</span>(item.product.price * item.quantity <span class="python-keyword">for</span> item <span class="python-keyword">in</span> active_cart_items)
+        shipping_threshold = Decimal(<span class="python-string">"50.00"</span>)
+        shipping_cost = Decimal(<span class="python-string">"5.99"</span>)
+        tax_rate = Decimal(<span class="python-string">"0.08"</span>)
+        
+        shipping = Decimal(<span class="python-string">"0.00"</span>) <span class="python-keyword">if</span> subtotal >= shipping_threshold <span class="python-keyword">else</span> shipping_cost
+        tax = subtotal * tax_rate
+        total = subtotal + shipping + tax
+        
+        <span class="python-comment"># Convert to cents for Stripe (ensure it's an integer)</span>
+        amount_in_cents = <span class="python-function">int</span>(total * <span class="python-number">100</span>)
+        
+        <span class="python-comment"># Create payment intent</span>
+        intent = stripe.PaymentIntent.create(
+            amount=amount_in_cents,
+            currency=<span class="python-string">'usd'</span>,
+            automatic_payment_methods={
+                <span class="python-string">'enabled'</span>: <span class="python-keyword">True</span>,
+            },
+            metadata={
+                <span class="python-string">'user_id'</span>: <span class="python-function">str</span>(session[<span class="python-string">'user_id'</span>]),
+                <span class="python-string">'session_id'</span>: session_id,
+                <span class="python-string">'order_type'</span>: <span class="python-string">'online_purchase'</span>
+            }
+        )
+        
+        <span class="python-keyword">return</span> jsonify({
+            <span class="python-string">'client_secret'</span>: intent.client_secret
+        })
+        
+    <span class="python-keyword">except</span> stripe.error.StripeError <span class="python-keyword">as</span> e:
+        <span class="python-keyword">return</span> jsonify({<span class="python-string">'error'</span>: <span class="python-string">f'Payment system error: {str(e)}'</span>}), <span class="python-number">500</span>
+    <span class="python-keyword">except</span> <span class="python-class">Exception</span> <span class="python-keyword">as</span> e:
+        <span class="python-keyword">return</span> jsonify({<span class="python-string">'error'</span>: <span class="python-string">f'Server error: {str(e)}'</span>}), <span class="python-number">500</span>
+</div>
+
+        <div class="code-explanation">
+            <strong>Payment Features:</strong>
+            <ul>
+                <li><strong>Tax Calculation:</strong> 8% tax rate applied to subtotal</li>
+                <li><strong>Shipping Logic:</strong> $5.99 shipping, free over $50</li>
+                <li><strong>Stripe Integration:</strong> Secure payment intent creation</li>
+                <li><strong>Error Handling:</strong> Comprehensive error management</li>
+            </ul>
+        </div>
+
+        <h2>📊 Seller Dashboard Analytics</h2>
+
+        <h3>Sales Trend API</h3>
+        <p>Comprehensive analytics for seller performance tracking.</p>
+
+        <div class="code-block">
+            <div class="code-header">app.py - Sales Analytics (Lines 1852-1929)</div>
+<span class="python-keyword">@app.route</span>(<span class="python-string">'/api/seller/sales-trend'</span>)
+<span class="python-keyword">@seller_required</span>
+<span class="python-keyword">def</span> <span class="python-function">seller_sales_trend</span>():
+    <span class="python-comment">"""Get sales trend data for the last 30 days"""</span>
+    <span class="python-keyword">from</span> <span class="python-string">datetime</span> <span class="python-keyword">import</span> datetime, timedelta
+    <span class="python-keyword">from</span> <span class="python-string">sqlalchemy</span> <span class="python-keyword">import</span> func, distinct
+    
+    user_id = session[<span class="python-string">'user_id'</span>]
+    
+    <span class="python-comment"># Get sales data for the last 30 days</span>
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=<span class="python-number">29</span>)  <span class="python-comment"># 30 days total including today</span>
+    
+    <span class="python-comment"># Query daily sales (revenue) for seller's products</span>
+    daily_sales = (
+        db.session.query(
+            func.date(Order.created_at).label(<span class="python-string">'date'</span>),
+            func.sum(OrderItem.price * OrderItem.quantity).label(<span class="python-string">'revenue'</span>),
+            func.count(distinct(Order.id)).label(<span class="python-string">'orders'</span>)
+        )
+        .join(OrderItem, Order.id == OrderItem.order_id)
+        .join(Product, OrderItem.product_id == Product.id)
+        .filter(
+            Product.seller_id == user_id,
+            func.date(Order.created_at) >= start_date,
+            func.date(Order.created_at) <= end_date,
+            Order.status.in_([<span class="python-string">'confirmed'</span>, <span class="python-string">'processing'</span>, <span class="python-string">'shipped'</span>, <span class="python-string">'delivered'</span>])
+        )
+        .group_by(func.date(Order.created_at))
+        .order_by(func.date(Order.created_at))
+        .all()
+    )
+    
+    <span class="python-comment"># Calculate trend (comparing last 15 days vs previous 15 days)</span>
+    last_15_days_revenue = <span class="python-function">sum</span>(revenues[-<span class="python-number">15</span>:])
+    prev_15_days_revenue = <span class="python-function">sum</span>(revenues[:<span class="python-number">15</span>])
+    
+    <span class="python-keyword">if</span> prev_15_days_revenue > <span class="python-number">0</span>:
+        trend_percentage = ((last_15_days_revenue - prev_15_days_revenue) / prev_15_days_revenue) * <span class="python-number">100</span>
+    <span class="python-keyword">else</span>:
+        trend_percentage = <span class="python-number">100</span> <span class="python-keyword">if</span> last_15_days_revenue > <span class="python-number">0</span> <span class="python-keyword">else</span> <span class="python-number">0</span>
+    
+    <span class="python-keyword">return</span> jsonify({
+        <span class="python-string">'dates'</span>: dates,
+        <span class="python-string">'revenues'</span>: revenues,
+        <span class="python-string">'orders'</span>: orders,
+        <span class="python-string">'summary'</span>: {
+            <span class="python-string">'total_revenue'</span>: total_revenue,
+            <span class="python-string">'total_orders'</span>: total_orders,
+            <span class="python-string">'avg_daily_revenue'</span>: avg_daily_revenue,
+            <span class="python-string">'trend_percentage'</span>: <span class="python-function">round</span>(trend_percentage, <span class="python-number">1</span>),
+            <span class="python-string">'trend_direction'</span>: <span class="python-string">'up'</span> <span class="python-keyword">if</span> trend_percentage >= <span class="python-number">0</span> <span class="python-keyword">else</span> <span class="python-string">'down'</span>
+        }
+    })
+</div>
+
+        <h2>🌐 API Endpoints Summary</h2>
+
+        <div class="endpoint-list">
+            <h3>Authentication Endpoints</h3>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/login</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/register</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/logout</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/forgot-password</span>
+            </div>
+
+            <h3>Product Management</h3>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/shop (with filtering/sorting)</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/product/&lt;id&gt;</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/seller/add-product</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/seller/edit-product/&lt;id&gt;</span>
+            </div>
+
+            <h3>Cart & Checkout</h3>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/cart</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/api/add-to-cart/&lt;id&gt;</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/create-payment-intent</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/process-stripe-payment</span>
+            </div>
+
+            <h3>API Endpoints</h3>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/api/cart-items</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method">GET</span>
+                <span>/api/cart-count</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method post">POST</span>
+                <span>/api/wishlist/add/&lt;id&gt;</span>
+            </div>
+            <div class="endpoint-item">
+                <span class="method delete">DELETE</span>
+                <span>/api/wishlist/remove/&lt;id&gt;</span>
+            </div>
+        </div>
+
+        <h2>🔒 Security Features</h2>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <strong>🔐 Password Security</strong><br>
+                Uses Werkzeug's secure password hashing with salt
+            </div>
+            <div class="feature-item">
+                <strong>🛡️ Session Management</strong><br>
+                Secure session handling with role-based access
+            </div>
+            <div class="feature-item">
+                <strong>✅ Input Validation</strong><br>
+                WTForms with comprehensive validators
+            </div>
+            <div class="feature-item">
+                <strong>🚫 SQL Injection Prevention</strong><br>
+                SQLAlchemy ORM protection
+            </div>
+            <div class="feature-item">
+                <strong>👤 Access Control</strong><br>
+                Role-based permissions (Buyer vs Seller)
+            </div>
+            <div class="feature-item">
+                <strong>🔒 File Upload Security</strong><br>
+                Secure filename handling and validation
+            </div>
+        </div>
+
+        <h2>🐳 Deployment Configuration</h2>
+
+        <h3>Docker Compose Setup</h3>
+        <div class="code-block">
+            <div class="code-header">docker-compose.yml - Multi-container Setup</div>
+<span class="python-keyword">version</span>: <span class="python-string">'3.8'</span>
+
+<span class="python-keyword">services</span>:
+  <span class="python-comment"># PostgreSQL Database</span>
+  <span class="python-keyword">db</span>:
+    <span class="python-keyword">image</span>: postgres:<span class="python-number">15</span>-alpine
+    <span class="python-keyword">environment</span>:
+      POSTGRES_DB: only_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    <span class="python-keyword">volumes</span>:
+      - postgres_data:/var/lib/postgresql/data
+    <span class="python-keyword">ports</span>:
+      - <span class="python-string">"5432:5432"</span>
+    <span class="python-keyword">healthcheck</span>:
+      <span class="python-keyword">test</span>: [<span class="python-string">"CMD-SHELL"</span>, <span class="python-string">"pg_isready -U postgres"</span>]
+      <span class="python-keyword">interval</span>: <span class="python-number">10</span>s
+      <span class="python-keyword">timeout</span>: <span class="python-number">5</span>s
+      <span class="python-keyword">retries</span>: <span class="python-number">5</span>
+
+  <span class="python-comment"># Flask Application</span>
+  <span class="python-keyword">web</span>:
+    <span class="python-keyword">build</span>: .
+    <span class="python-keyword">ports</span>:
+      - <span class="python-string">"5000:5000"</span>
+    <span class="python-keyword">environment</span>:
+      - DATABASE_URL=postgresql://postgres:password@db:<span class="python-number">5432</span>/only_db
+      - SECRET_KEY=sk_dev_a8f5f167f44f4964e6c998dee827110c
+      - FLASK_ENV=production
+    <span class="python-keyword">depends_on</span>:
+      <span class="python-keyword">db</span>:
+        <span class="python-keyword">condition</span>: service_healthy
+    <span class="python-keyword">volumes</span>:
+      - ./static/uploads:/app/static/uploads
+    <span class="python-keyword">restart</span>: unless-stopped
+
+<span class="python-keyword">volumes</span>:
+  <span class="python-keyword">postgres_data</span>:
+</div>
+
+        <h2>📈 Key Features Implemented</h2>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <strong>👥 Multi-role System</strong><br>
+                Buyers and Sellers with different capabilities and dashboards
+            </div>
+            <div class="feature-item">
+                <strong>🛒 Guest Shopping</strong><br>
+                Cart functionality without registration requirement
+            </div>
+            <div class="feature-item">
+                <strong>🔍 Advanced Search</strong><br>
+                Category, price, and text-based filtering with sorting
+            </div>
+            <div class="feature-item">
+                <strong>🖼️ Image Management</strong><br>
+                Multiple product images with secure upload handling
+            </div>
+            <div class="feature-item">
+                <strong>💳 Payment Processing</strong><br>
+                Stripe integration with tax and shipping calculations
+            </div>
+            <div class="feature-item">
+                <strong>📧 Email Notifications</strong><br>
+                Order confirmations and password reset emails
+            </div>
+            <div class="feature-item">
+                <strong>📊 Analytics Dashboard</strong><br>
+                Sales trends and product view tracking for sellers
+            </div>
+            <div class="feature-item">
+                <strong>📱 Responsive Design</strong><br>
+                Mobile-first approach with Bootstrap framework
+            </div>
+            <div class="feature-item">
+                <strong>🐳 Docker Deployment</strong><br>
+                Production-ready containerization with multi-service setup
+            </div>
+            <div class="feature-item">
+                <strong>🔒 Security</strong><br>
+                Password hashing, session management, input validation
+            </div>
+        </div>
+
+        <div class="highlight-box">
+            <strong>💡 Development Notes:</strong>
+            <ul>
+                <li><strong>Modular Structure:</strong> Separate files for models, forms, templates</li>
+                <li><strong>Error Handling:</strong> Comprehensive try-catch blocks throughout</li>
+                <li><strong>Performance:</strong> Optimized database queries with proper joins</li>
+                <li><strong>Scalability:</strong> Docker-based deployment for easy scaling</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>
+                <strong>Shopy E-commerce Platform</strong> - Comprehensive Code Documentation<br>
+                <em>Built with modern web development practices, security considerations, and production-ready deployment configuration.</em>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

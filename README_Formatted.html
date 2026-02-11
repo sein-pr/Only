@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopy - E-commerce Platform README</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .document {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #ea580c;
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #ea580c;
+            padding-bottom: 15px;
+        }
+        
+        h2 {
+            color: #f97316;
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-left: 4px solid #f97316;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #fb923c;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        strong {
+            color: #ea580c;
+            font-weight: 600;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+        }
+        
+        .highlight-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .contact-info {
+            background-color: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ea580c;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .step-number {
+            background-color: #ea580c;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .feature-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ea580c;
+        }
+        
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .tech-item {
+            background-color: #ea580c;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <h1>🛍️ Shopy</h1>
+        <p style="text-align: center; font-size: 1.1em; color: #666; margin-bottom: 30px;">
+            <em>Your Premium E-commerce Shopping Destination</em>
+        </p>
+
+        <h2>📋 Overview</h2>
+        <p>
+            Shopy (formerly "Only") is a comprehensive e-commerce web application developed using the Flask framework. 
+            This project aims to provide a seamless shopping experience with integrated payment processing capabilities, 
+            advanced user management, and a robust seller dashboard system.
+        </p>
+
+        <div class="highlight-box">
+            <strong>🎯 Project Goal:</strong> Create a modern, scalable e-commerce platform that supports both buyers and sellers 
+            with advanced features like real-time cart management, secure payment processing, and comprehensive analytics.
+        </div>
+
+        <h2>✨ Features</h2>
+        <div class="feature-list">
+            <div class="feature-item">
+                <strong>🛒 Product Catalog</strong><br>
+                Browse and search through a wide range of products with advanced filtering options.
+            </div>
+            <div class="feature-item">
+                <strong>🔐 User Authentication</strong><br>
+                Secure login and registration system with role-based access control.
+            </div>
+            <div class="feature-item">
+                <strong>🛍️ Shopping Cart</strong><br>
+                Advanced cart management with save-for-later functionality and guest support.
+            </div>
+            <div class="feature-item">
+                <strong>💳 Payment Gateway</strong><br>
+                Integrated with Stripe for secure payment processing with tax and shipping calculations.
+            </div>
+            <div class="feature-item">
+                <strong>📦 Order Management</strong><br>
+                Complete order tracking system with status updates and order history.
+            </div>
+            <div class="feature-item">
+                <strong>📱 Responsive Design</strong><br>
+                Mobile-first design ensuring smooth experience across all devices.
+            </div>
+            <div class="feature-item">
+                <strong>👥 Multi-Role System</strong><br>
+                Separate interfaces for buyers and sellers with specialized dashboards.
+            </div>
+            <div class="feature-item">
+                <strong>📊 Analytics Dashboard</strong><br>
+                Comprehensive sales analytics and product view tracking for sellers.
+            </div>
+        </div>
+
+        <h2>🛠️ Technology Stack</h2>
+        <div class="tech-stack">
+            <span class="tech-item">Python 3.11</span>
+            <span class="tech-item">Flask 2.3.3</span>
+            <span class="tech-item">PostgreSQL</span>
+            <span class="tech-item">SQLAlchemy</span>
+            <span class="tech-item">Bootstrap 5.3</span>
+            <span class="tech-item">Stripe API</span>
+            <span class="tech-item">Docker</span>
+            <span class="tech-item">Nginx</span>
+        </div>
+
+        <h3>Backend Technologies</h3>
+        <ul>
+            <li><strong>Python</strong>: The core programming language used for backend development</li>
+            <li><strong>Flask</strong>: Lightweight web framework that powers the application</li>
+            <li><strong>SQLAlchemy</strong>: Object-Relational Mapping (ORM) for database operations</li>
+            <li><strong>PostgreSQL</strong>: Robust relational database for data persistence</li>
+        </ul>
+
+        <h3>Frontend Technologies</h3>
+        <ul>
+            <li><strong>HTML5/CSS3</strong>: Modern markup and styling</li>
+            <li><strong>Bootstrap 5.3</strong>: Responsive CSS framework</li>
+            <li><strong>JavaScript</strong>: Interactive user interface components</li>
+            <li><strong>Font Awesome</strong>: Icon library for enhanced UI</li>
+        </ul>
+
+        <h3>Third-Party Services</h3>
+        <ul>
+            <li><strong>Stripe</strong>: Payment processing and secure transactions</li>
+            <li><strong>Flask-Mail</strong>: Email notifications and communications</li>
+            <li><strong>Docker</strong>: Containerization for easy deployment</li>
+        </ul>
+
+        <h2>🚀 Installation</h2>
+        <p>To set up the project locally, follow these step-by-step instructions:</p>
+
+        <h3><span class="step-number">1</span>Clone the Repository</h3>
+        <pre><code>git clone https://github.com/sein-pr/Only.git</code></pre>
+
+        <h3><span class="step-number">2</span>Navigate to the Project Directory</h3>
+        <pre><code>cd Only</code></pre>
+
+        <h3><span class="step-number">3</span>Install Dependencies</h3>
+        <p>Ensure you have Python 3.11 and pip installed, then run:</p>
+        <pre><code>pip install -r requirements.txt</code></pre>
+
+        <h3><span class="step-number">4</span>Set Up Environment Variables</h3>
+        <p>Create a <code>.env</code> file in the project root with the following variables:</p>
+        <pre><code>SECRET_KEY=your-secret-key-here
+DATABASE_URL=postgresql://username:password@localhost:5432/only_db
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password</code></pre>
+
+        <h3><span class="step-number">5</span>Set Up Database</h3>
+        <p>Create a PostgreSQL database and run the application to initialize tables:</p>
+        <pre><code>python app.py</code></pre>
+
+        <h3><span class="step-number">6</span>Access the Application</h3>
+        <p>Open your browser and go to <code>http://127.0.0.1:5000/</code></p>
+
+        <div class="highlight-box">
+            <strong>💡 Pro Tip:</strong> For production deployment, use Docker Compose with the provided 
+            <code>docker-compose.yml</code> file for a complete setup including PostgreSQL, Redis, and Nginx.
+        </div>
+
+        <h2>🐳 Docker Deployment</h2>
+        <p>For easy deployment using Docker:</p>
+        <pre><code># Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down</code></pre>
+
+        <h2>📁 Project Structure</h2>
+        <pre><code>Shopy/
+├── app.py                 # Main application file
+├── models/               # Database models
+├── forms/                # Form definitions
+├── templates/            # HTML templates
+├── static/               # CSS, JS, and images
+├── requirements.txt      # Python dependencies
+├── Dockerfile           # Docker configuration
+├── docker-compose.yml   # Multi-container setup
+└── README.md            # This file</code></pre>
+
+        <h2>🤝 Contributing</h2>
+        <p>
+            Contributions are welcome! If you would like to contribute to the project, please follow these steps:
+        </p>
+        <ol>
+            <li>Fork the repository</li>
+            <li>Create a feature branch (<code>git checkout -b feature/AmazingFeature</code>)</li>
+            <li>Commit your changes (<code>git commit -m 'Add some AmazingFeature'</code>)</li>
+            <li>Push to the branch (<code>git push origin feature/AmazingFeature</code>)</li>
+            <li>Open a Pull Request</li>
+        </ol>
+
+        <h2>📄 License</h2>
+        <p>
+            This project does not have a specified license. Please check the repository for any updates 
+            regarding licensing. For now, please contact the repository owner for usage permissions.
+        </p>
+
+        <div class="contact-info">
+            <h2>📞 Contact</h2>
+            <p>
+                For inquiries, feedback, or support, please reach out via the GitHub repository:
+            </p>
+            <p>
+                <strong>GitHub Repository:</strong> 
+                <a href="https://github.com/sein-pr/Only" style="color: #ea580c;">https://github.com/sein-pr/Only</a>
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>
+                <strong>Shopy</strong> - Built with ❤️ using Flask and modern web technologies<br>
+                <em>Feel free to modify any sections to better fit the project's specifics or your preferences!</em>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

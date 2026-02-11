@@ -1,0 +1,31 @@
+# Netlify Configuration File
+# Note: This Flask application cannot be directly deployed to Netlify
+# as Netlify only hosts static frontend applications.
+#
+# This configuration is provided for documentation purposes.
+# To deploy this Flask application, use platforms like:
+# - Heroku
+# - Railway
+# - PythonAnywhere
+# - AWS Elastic Beanstalk
+# - Google Cloud Platform
+# - DigitalOcean App Platform
+
+[build]
+  # Since this is a Flask app, this configuration won't work directly
+  # Frontend build command would go here if you had one
+  # command = "npm run build" # or similar for frontend frameworks
+  publish = "static/"
+
+[[redirects]]
+  # Catch-all redirect for API routes to inform users about backend
+  from = "/api/*"
+  to = "https://your-backend-deployment-url/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  # Redirect all non-static routes to index.html for SPA handling
+  from = "/*"
+  to = "/index.html"
+  status = 200

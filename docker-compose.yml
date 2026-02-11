@@ -1,23 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: only_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Redis for caching (optional)
   redis:
     image: redis:7-alpine
@@ -35,24 +18,22 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/only_db
-      - SECRET_KEY=your-secret-key-change-this-in-production
+      - SECRET_KEY=sk_dev_a8f5f167f44f4964e6c998dee827110c
       - FLASK_ENV=production
       - MAIL_SERVER=smtp.gmail.com
       - MAIL_PORT=587
       - MAIL_USE_TLS=True
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - MAIL_USERNAME=${MAIL_USERNAME:-fromisgood@gmail.com}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-deui rrwc wdlr rrdc}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER:-fromisgood@gmail.com}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_51SBGRFA3Xw82lRlh6xutx1p9SqHtp4ilApW5IJox6Repd53kAxRoMNELJDKlrhEe0YaQUpX3de0YN1BBoONTrSij00uymkBE0k}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_51SBGRFA3Xw82lRlh0RJIc9S7s3VL0DzsOhrpMohObh33C5VHjnYeMcRyqh8htK3ZS3Po1gF2sHiXx6C7SJNiQFql00qYiolhN6}
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
       - ./static/uploads:/app/static/uploads
+      - ./instance:/app/instance  # Mount instance folder for SQLite database
     restart: unless-stopped
 
   # Nginx Reverse Proxy (optional)
@@ -67,7 +48,4 @@ services:
     depends_on:
       - web
     restart: unless-stopped
-
-volumes:
-  postgres_data:
 

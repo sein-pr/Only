@@ -1,26 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: only_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - app-network
-
   # Redis for caching
   redis:
     image: redis:7-alpine
@@ -43,7 +23,6 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-password}@db:5432/only_db
       - SECRET_KEY=${SECRET_KEY}
       - FLASK_ENV=production
       - MAIL_SERVER=${MAIL_SERVER:-smtp.gmail.com}
@@ -56,12 +35,11 @@ services:
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - REDIS_URL=redis://redis:6379/0
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
       - ./static/uploads:/app/static/uploads
+      - ./instance:/app/instance  # Mount instance folder for SQLite database
     restart: unless-stopped
     networks:
       - app-network
@@ -88,10 +66,6 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-
-volumes:
-  postgres_data:
-    driver: local
 
 networks:
   app-network:

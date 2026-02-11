@@ -25,22 +25,8 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# PostgreSQL Configuration
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    # Handle Heroku postgres URL format
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    # Local development PostgreSQL
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
-        f"{os.environ.get('DB_PASSWORD', 'password')}@"
-        f"{os.environ.get('DB_HOST', 'localhost')}:"
-        f"{os.environ.get('DB_PORT', '5432')}/"
-        f"{os.environ.get('DB_NAME', 'only_db')}"
-    )
+# SQLite Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///only.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'

@@ -1,0 +1,330 @@
+# SHOPY E-COMMERCE PROJECT - COMPREHENSIVE CODE DOCUMENTATION
+# =============================================================
+
+## PROJECT OVERVIEW
+Shopy (formerly "Only") is a full-featured e-commerce web application built with Flask (Python web framework). 
+It provides a complete online shopping experience with user authentication, product management, shopping cart, 
+payment processing, and seller dashboard functionality.
+
+## TECHNOLOGY STACK
+- **Backend**: Python 3.11, Flask 2.3.3, SQLAlchemy (ORM)
+- **Database**: PostgreSQL 15
+- **Frontend**: HTML5, CSS3, Bootstrap 5.3, JavaScript, Font Awesome
+- **Payment**: Stripe API integration
+- **Email**: Flask-Mail with SMTP
+- **Deployment**: Docker, Docker Compose, Nginx
+- **Security**: CSRF protection, password hashing, session management
+
+## MAIN APPLICATION FILE: app.py
+================================
+
+### CONFIGURATION & SETUP (Lines 1-68)
+- **Environment Variables**: Uses python-dotenv to load configuration from .env file
+- **Database Configuration**: Supports both local PostgreSQL and Heroku PostgreSQL
+- **Mail Configuration**: SMTP settings for email notifications (password reset, order confirmations)
+- **Stripe Configuration**: Payment processing API keys
+- **File Upload**: Configures upload directory for product images and user avatars
+
+### DATABASE MODELS (models/models.py)
+=====================================
+
+#### User Model (Lines 7-49)
+- **Core Fields**: id, username, email, password_hash, role, created_at
+- **Profile Fields**: first_name, last_name, phone, address, avatar_url
+- **Structured Address**: address_line1, city, state_province, postal_code, country
+- **Company Fields**: For sellers - company_name, company_description, company_logo_url
+- **Relationships**: One-to-many with orders and products
+
+#### Category Model (Lines 51-57)
+- **Fields**: id, name, description
+- **Purpose**: Organizes products into categories (Electronics, Clothing, etc.)
+
+#### Product Model (Lines 60-77)
+- **Core Fields**: id, name, description, price, stock_quantity, image_url
+- **Advanced Features**: additional_images (JSON array), status (active/inactive)
+- **Foreign Keys**: category_id, seller_id
+- **Relationships**: One-to-many with order_items
+
+#### Order & OrderItem Models (Lines 79-101)
+- **Order**: order_number, total_amount, status, user_id
+- **OrderItem**: quantity, price, order_id, product_id
+- **Status Flow**: pending → confirmed → processing → shipped → delivered
+
+#### CartItem Model (Lines 103-112)
+- **Session Management**: Uses session_id for guest users and user_id for logged-in users
+- **Features**: quantity, save_for_later functionality
+- **Purpose**: Manages shopping cart items before checkout
+
+#### Wishlist Model (Lines 115-127)
+- **Purpose**: Allows users to save products for later purchase
+- **Constraints**: Unique combination of user_id and product_id
+
+#### ProductView Model (Lines 129-141)
+- **Analytics**: Tracks product views for seller analytics
+- **View Types**: quick_view, full_detail
+- **Guest Support**: Tracks IP address and user agent for non-logged-in users
+
+#### PasswordResetToken Model (Lines 143-152)
+- **Security**: Secure token-based password reset system
+- **Expiration**: Tokens expire after 1 hour
+- **Usage Tracking**: Prevents token reuse
+
+### FORM HANDLING (forms/)
+=========================
+
+#### forms.py (Basic Forms)
+- **LoginForm**: Email and password validation
+- **RegisterForm**: Username, email, password, role selection
+- **ProductForm**: Product creation/editing with image upload
+
+#### profile_forms.py (Advanced Profile Management)
+- **ProfileForm**: Comprehensive user profile with structured address fields
+- **Country Codes**: Extensive list of international phone country codes
+- **Company Fields**: Separate company information for sellers
+- **File Uploads**: Avatar and company logo support
+
+#### password_reset_forms.py (Security Forms)
+- **ForgotPasswordForm**: Email input for password reset request
+- **ResetPasswordForm**: New password with confirmation validation
+
+### AUTHENTICATION SYSTEM (Lines 120-392)
+=========================================
+
+#### Helper Functions
+- **get_session_id()**: Generates unique session IDs for cart management
+- **get_cart_count()**: Returns number of items in user's cart
+- **login_required**: Decorator for protected routes
+- **seller_required**: Decorator for seller-only routes
+
+#### Login Route (Lines 143-185)
+- **Password Verification**: Uses Werkzeug's check_password_hash
+- **Session Management**: Stores user_id, username, role in session
+- **Cart Transfer**: Merges guest cart with user cart upon login
+- **Role-based Redirect**: Sellers go to dashboard, buyers to home
+
+#### Registration Route (Lines 296-341)
+- **Duplicate Check**: Prevents duplicate usernames/emails
+- **Password Hashing**: Uses Werkzeug's generate_password_hash
+- **Automatic Login**: Logs in user after successful registration
+
+#### Password Reset System (Lines 187-391)
+- **Token Generation**: Creates secure UUID tokens with 1-hour expiration
+- **Email Integration**: Sends HTML-formatted reset emails
+- **Security**: Prevents token reuse and validates expiration
+
+### PRODUCT MANAGEMENT (Lines 599-1534)
+======================================
+
+#### Shop Route (Lines 615-689)
+- **Filtering**: Category, search, price range filters
+- **Sorting**: Price (low/high), name, newest
+- **Pagination**: 9 items per page for mobile optimization
+- **Wishlist Integration**: Shows wishlist status for logged-in users
+
+#### Product Detail Route (Lines 691-739)
+- **Access Control**: Prevents viewing inactive products (except by seller)
+- **Related Products**: Shows 4 related products from same category
+- **View Tracking**: Records product views for analytics
+- **Wishlist Check**: Determines if product is in user's wishlist
+
+#### Seller Dashboard (Lines 1217-1355)
+- **Statistics**: Total products, orders, revenue, daily performance
+- **Analytics**: View counts, average rating (based on wishlist popularity)
+- **Recent Activity**: Latest products and orders
+- **Performance Metrics**: Daily order comparison, new customer count
+
+#### Product CRUD Operations
+- **Add Product**: Image upload, additional images support, category selection
+- **Edit Product**: Update all fields, manage additional images
+- **Delete Product**: Soft delete with ownership verification
+- **Duplicate Product**: Creates copy with "COPY of..." prefix
+
+### SHOPPING CART SYSTEM (Lines 741-1030)
+=========================================
+
+#### Cart Management
+- **Session-based**: Works for both guests and logged-in users
+- **Save for Later**: Items can be saved without purchasing
+- **Stock Validation**: Checks availability before adding to cart
+- **Quantity Updates**: Real-time quantity modification
+
+#### API Endpoints
+- **/api/cart-items**: Returns cart contents as JSON
+- **/api/add-to-cart**: AJAX cart addition
+- **/api/update-cart-item**: Quantity updates
+- **/api/remove-cart-item**: Item removal
+- **/api/cart-selection**: Manage which items to checkout
+
+### PAYMENT PROCESSING (Lines 1587-1731)
+========================================
+
+#### Stripe Integration
+- **Payment Intent**: Creates secure payment intents
+- **Amount Calculation**: Includes tax (8%) and shipping ($5.99, free over $50)
+- **Order Creation**: Processes successful payments
+- **Stock Management**: Updates inventory after purchase
+- **Email Notifications**: Sends order confirmation emails
+
+#### Order Management
+- **Order Tracking**: Status updates (confirmed → processing → shipped → delivered)
+- **Cancellation**: Allows order cancellation with stock restoration
+- **Reorder**: Adds previous order items back to cart
+
+### WISHLIST FUNCTIONALITY (Lines 1069-1137)
+============================================
+
+#### API Endpoints
+- **/api/wishlist/add**: Adds product to wishlist
+- **/api/wishlist/remove**: Removes product from wishlist
+- **Prevention**: Sellers cannot add their own products to wishlist
+
+### ANALYTICS & TRACKING (Lines 1851-1929)
+==========================================
+
+#### Sales Analytics
+- **30-day Trends**: Daily revenue and order counts
+- **Performance Metrics**: Average daily revenue, trend percentages
+- **Data Visualization**: JSON data for frontend charts
+
+#### Product View Tracking
+- **View Types**: Quick view vs full detail view
+- **User Tracking**: Logged-in users and guest users
+- **Analytics**: View counts for seller dashboard
+
+### EMAIL SYSTEM (Lines 2077-2155)
+==================================
+
+#### Order Confirmation Emails
+- **HTML Templates**: Professional email design
+- **Order Details**: Complete order information with items table
+- **Branding**: Consistent Only brand styling
+- **Error Handling**: Graceful failure without affecting order processing
+
+### DEPLOYMENT CONFIGURATION
+===========================
+
+#### Docker Setup
+- **Dockerfile**: Python 3.11 slim base image
+- **Security**: Non-root user, health checks
+- **Dependencies**: PostgreSQL client, build tools
+
+#### Docker Compose (docker-compose.yml)
+- **Services**: PostgreSQL, Redis, Flask app, Nginx
+- **Environment**: Production configuration
+- **Volumes**: Persistent data storage
+- **Health Checks**: Service dependency management
+
+#### Nginx Configuration
+- **Reverse Proxy**: Routes traffic to Flask app
+- **Static Files**: Serves uploaded images
+- **SSL Support**: HTTPS configuration ready
+
+### FRONTEND STRUCTURE
+=====================
+
+#### Templates (templates/)
+- **base.html**: Main layout with Bootstrap 5, responsive design
+- **Authentication**: login.html, register.html, forgot_password.html
+- **Shopping**: shop.html, product_detail.html, cart.html, checkout.html
+- **User Management**: profile.html, order_history.html
+- **Seller**: dashboard.html, add_product.html, products.html
+
+#### Static Assets (static/)
+- **CSS**: Custom styles with animations and responsive design
+- **Images**: Logo, favicon, product images
+- **JavaScript**: Cart management, AJAX requests, form validation
+
+### SECURITY FEATURES
+====================
+
+#### Authentication Security
+- **Password Hashing**: Werkzeug's secure password hashing
+- **Session Management**: Secure session handling
+- **CSRF Protection**: Flask-WTF CSRF tokens (commented out in current version)
+
+#### Data Validation
+- **Form Validation**: WTForms with comprehensive validators
+- **Input Sanitization**: Secure filename handling for uploads
+- **SQL Injection Prevention**: SQLAlchemy ORM protection
+
+#### Access Control
+- **Role-based Access**: Buyer vs Seller permissions
+- **Ownership Verification**: Users can only modify their own data
+- **Route Protection**: Decorators for authentication requirements
+
+### API ENDPOINTS SUMMARY
+========================
+
+#### Authentication
+- POST /login, /register, /logout
+- POST /forgot-password, /reset-password/<token>
+
+#### Product Management
+- GET /shop (with filtering/sorting)
+- GET /product/<id>
+- POST /seller/add-product, /seller/edit-product/<id>
+- DELETE /seller/delete-product/<id>
+
+#### Cart & Checkout
+- GET /cart
+- POST /add-to-cart/<id>
+- POST /create-payment-intent
+- POST /process-stripe-payment
+
+#### API Endpoints
+- /api/cart-items, /api/cart-count
+- /api/wishlist/add/<id>, /api/wishlist/remove/<id>
+- /api/product/<id>/quick-view
+- /api/seller/sales-trend
+
+### DATABASE RELATIONSHIPS
+=========================
+
+#### User Relationships
+- One-to-Many: User → Orders, User → Products (as seller)
+- One-to-Many: User → Wishlist, User → ProductViews
+
+#### Product Relationships
+- Many-to-One: Product → Category, Product → User (seller)
+- One-to-Many: Product → OrderItems, Product → CartItems
+
+#### Order Relationships
+- Many-to-One: Order → User
+- One-to-Many: Order → OrderItems
+
+### KEY FEATURES IMPLEMENTED
+===========================
+
+1. **Multi-role System**: Buyers and Sellers with different capabilities
+2. **Guest Shopping**: Cart functionality without registration
+3. **Advanced Search**: Category, price, and text-based filtering
+4. **Image Management**: Multiple product images with upload handling
+5. **Payment Processing**: Stripe integration with tax and shipping
+6. **Email Notifications**: Order confirmations and password resets
+7. **Analytics Dashboard**: Sales trends and product view tracking
+8. **Responsive Design**: Mobile-first approach with Bootstrap
+9. **Docker Deployment**: Production-ready containerization
+10. **Security**: Password hashing, session management, input validation
+
+### DEVELOPMENT NOTES
+====================
+
+#### Code Organization
+- **Modular Structure**: Separate files for models, forms, templates
+- **Error Handling**: Comprehensive try-catch blocks
+- **Logging**: Debug information for troubleshooting
+- **Comments**: Well-documented code with inline explanations
+
+#### Performance Considerations
+- **Database Queries**: Optimized with proper joins and indexing
+- **Pagination**: Large result sets are paginated
+- **Image Optimization**: Secure filename handling and storage
+- **Caching**: Redis integration for potential caching needs
+
+#### Scalability Features
+- **Docker**: Easy deployment and scaling
+- **Database**: PostgreSQL for robust data handling
+- **Static Files**: Nginx for efficient static file serving
+- **Environment Variables**: Flexible configuration management
+
+This e-commerce platform provides a complete solution for online shopping with modern web development practices, security considerations, and production-ready deployment configuration.
