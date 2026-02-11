@@ -35,12 +35,37 @@ To set up the project locally, follow these steps:
    pip install -r requirements.txt
    ```
 
-4. **Run the Application**
+4. **Configure Environment Variables**
+   
+   Create a `.env` file in the project root directory by copying the example file:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Then edit the `.env` file and add your configuration values:
+   
+   **Required Variables:**
+   - `SECRET_KEY`: Flask secret key for session management
+   - `BACK4APP_APP_ID`: Your Back4App Application ID
+   - `BACK4APP_MASTER_KEY` or `BACK4APP_CLIENT_KEY`: Back4App authentication key
+   
+   **Optional Variables:**
+   - Database configuration (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD)
+   - Stripe keys for payment processing
+   - Email configuration for password reset functionality
+   
+   **Important Notes:**
+   - The `.env` file is loaded automatically when the application starts
+   - Never commit your `.env` file to version control (it's in `.gitignore`)
+   - For production deployment, use platform-provided environment variables instead of `.env` files
+   - Environment variables from `.env` file take precedence over system environment variables
+
+5. **Run the Application**
    ```bash
    python app.py
    ```
 
-5. **Access the Application**
+6. **Access the Application**
    Open your browser and go to `http://127.0.0.1:5000/`.
 
 ## Contributing
